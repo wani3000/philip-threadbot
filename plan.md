@@ -132,7 +132,7 @@ Iteration:
 
 Todo List:
 - `[x]` `PT-10` schema design — agent: Codex
-- `[ ]` `PT-11` migration bootstrap — agent: Codex
+- `[x]` `PT-11` migration bootstrap — agent: Codex
 - `[ ]` `PT-12` admin auth boundary — agent: Codex
 
 ## PT-3 AI content generation pipeline
@@ -194,11 +194,11 @@ Todo List:
 - `[ ]` `PT-14` draft generation pipeline — agent: Codex
 - `[ ]` `PT-16` non-visual AI settings wiring — agent: Codex
 
-## PT-4 Scheduling, notifications, and Threads publishing automation
+## PT-4 Scheduling, Telegram notifications, and Threads publishing automation
 
 Subtasks:
-- `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning notifications` — executable now
-- `PT-17` `[BE] Integrate draft notification email delivery` — executable now
+- `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications` — executable now
+- `PT-17` `[BE] Integrate draft notification Telegram bot delivery` — executable now
 - `PT-18` `[BE] Implement Threads OAuth and publishing workflow` — executable now
 
 Approach:
@@ -221,13 +221,13 @@ mark run results
 
 `PT-17`
 - Files:
-  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/email/*`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/telegram/*`
   - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/templates/*`
 - Pseudocode:
 ```text
-render draft email
+render draft telegram message
 include schedule time, model, material source, edit link
-send via adapter
+send via Telegram bot adapter
 ```
 
 `PT-18`
@@ -248,7 +248,7 @@ Iteration:
 
 Todo List:
 - `[ ]` `PT-15` cron jobs — agent: Codex
-- `[ ]` `PT-17` email delivery — agent: Codex
+- `[ ]` `PT-17` Telegram delivery — agent: Codex
 - `[ ]` `PT-18` Threads workflow — agent: Codex
 
 ## PT-5 Dashboard operations and content management

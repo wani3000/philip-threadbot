@@ -13,7 +13,7 @@ The planned runtime flow is:
 
 1. Admin stores structured source material about Philip.
 2. AI selects source material and generates a draft in Philip's tone.
-3. Admin receives a morning email and can review or adjust the draft.
+3. Admin receives a morning Telegram bot message and can review or adjust the draft.
 4. Approved content is published to Threads at the scheduled time.
 
 ## 2. Current Codebase State
@@ -41,7 +41,7 @@ The product plan defines four logical layers:
 2. AI content generation layer
    Material selection, prompt orchestration, model invocation, and post-processing.
 3. Review and approval layer
-   Morning email notifications and dashboard editing/regeneration flow.
+   Morning Telegram notifications and dashboard editing/regeneration flow.
 4. Automated publishing layer
    Scheduled Threads publishing with success/failure tracking.
 
@@ -52,7 +52,7 @@ The product plan defines four logical layers:
 - Database: Supabase PostgreSQL
 - AI providers: Claude, OpenAI, Gemini
 - Scheduling: Cron via Vercel/Railway
-- Email: Resend or Gmail SMTP
+- Notifications: Telegram Bot API
 - Social publishing: Threads Graph API
 
 ## 4. Module Analysis
@@ -87,7 +87,7 @@ Role:
 Expected responsibilities:
 - profile material CRUD
 - AI generation orchestration
-- email notifications
+- Telegram notifications
 - Threads OAuth and publishing
 - scheduling and retry workflows
 - audit/event logging
@@ -100,7 +100,7 @@ Current state:
 
 - `supabase/` or equivalent migration folder for SQL migrations and optional seeds
 - shared schema/validation package if API and web start sharing zod or typed contracts
-- email templates module
+- Telegram message formatting module
 - AI provider client modules
 - Threads API integration modules
 
@@ -151,6 +151,8 @@ Recommended ownership model:
 - typed validation schemas in application code
 - optional query helper layer in the API package
 - schema reference document at `/Users/chulwan/Documents/GitHub/designer_threadbot/docs/db-schema.md`
+- bootstrap SQL at `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/migrations/0001_initial.sql`
+- local sample seed at `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/seed.sql`
 
 Planned core entities from the product document:
 - `philip_profiles`
@@ -195,7 +197,7 @@ Scheduling and review:
 
 Automation:
 - `POST /api/cron/generate-daily-draft`
-- `POST /api/cron/send-daily-email`
+- `POST /api/cron/send-daily-telegram`
 - `POST /api/cron/publish-approved-posts`
 
 Threads:
@@ -220,7 +222,7 @@ These are design targets only. They do not exist yet.
 
 - Database: Supabase PostgreSQL
 - Authentication: Supabase Auth
-- Email: Resend or Gmail SMTP
+- Notifications: Telegram Bot API
 - AI: Claude, OpenAI, Gemini abstraction layer
 - Scheduling: Vercel/Railway cron endpoints
 - Deployment: Vercel for web, Railway for API

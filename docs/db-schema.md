@@ -7,7 +7,7 @@ This document translates the March 2026 planning brief into a first-pass Postgre
 - structured profile source material storage
 - AI draft generation traceability
 - review/edit/schedule lifecycle
-- email notification configuration
+- Telegram notification configuration
 - Threads publishing state tracking
 
 This schema intentionally favors explicit lifecycle columns and operational traceability over abstraction-heavy modeling.
@@ -50,7 +50,7 @@ This schema intentionally favors explicit lifecycle columns and operational trac
 ### `job_type`
 
 - `generate_daily_draft`
-- `send_daily_email`
+- `send_daily_telegram`
 - `publish_scheduled_post`
 
 ### `job_status`
@@ -133,7 +133,7 @@ Notes:
 ### 4.3 `ai_settings`
 
 Purpose:
-- Stores system-wide admin settings for generation and notification behavior.
+- Stores system-wide admin settings for generation and Telegram notification behavior.
 
 Columns:
 - `id uuid primary key default gen_random_uuid()`
@@ -141,8 +141,8 @@ Columns:
 - `default_model text not null`
 - `custom_system_prompt text`
 - `tone_settings jsonb not null default '{}'::jsonb`
-- `email_recipient text not null`
-- `email_send_time time not null default '07:00:00'`
+- `telegram_chat_id text not null`
+- `telegram_send_time time not null default '07:00:00'`
 - `default_post_time time not null default '09:00:00'`
 - `timezone text not null default 'Asia/Seoul'`
 - `created_at timestamptz not null default now()`
@@ -247,7 +247,7 @@ Indexes:
 ### Later possible additions
 
 - `post_tags` if hashtags need separate analytics
-- `email_deliveries` if email troubleshooting becomes important
+- `telegram_deliveries` if delivery troubleshooting becomes important
 - `post_metrics` if Threads insights become part of reporting
 
 ## 8. API Coupling Notes
@@ -269,4 +269,3 @@ Tables mapped to early APIs:
 ## 10. Next Step
 
 The next implementation step is `PT-11`: convert this PRD into repository-managed SQL migrations inside `supabase/migrations`.
-

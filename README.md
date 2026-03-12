@@ -1,6 +1,6 @@
 # Philip Threadbot
 
-Philip Threadbot is an admin-operated automation system that turns Philip Designer's experience, lecture topics, and project history into reviewable Threads drafts, daily email notifications, and scheduled Threads publishing. The business goal is to convert consistent personal-brand content into lecture inquiries and design project leads.
+Philip Threadbot is an admin-operated automation system that turns Philip Designer's experience, lecture topics, and project history into reviewable Threads drafts, daily Telegram bot notifications, and scheduled Threads publishing. The business goal is to convert consistent personal-brand content into lecture inquiries and design project leads.
 
 ## Current Context
 
@@ -19,7 +19,7 @@ Initial setup is now in progress. The repository started empty, so the current f
 - Node.js + Express
 - TypeScript
 - npm workspaces
-- Planned: Supabase, Resend/Gmail SMTP, Claude/OpenAI/Gemini, Threads Graph API
+- Planned: Supabase, Telegram Bot API, Claude/OpenAI/Gemini, Threads Graph API
 
 ## Agent Ownership
 
@@ -29,7 +29,8 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
   - `PT-10` `[DB] Design initial Supabase schema and migration plan`
-- Next planned executable task: `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
+  - `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
+- Next planned executable task: `PT-12` `[BE] Implement admin authentication boundary`
 
 ## Work Status
 
@@ -39,10 +40,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - monorepo workspace baseline
   - environment variable contract and API startup validation
   - first-pass database schema PRD
+  - initial Supabase migration and seed files
 - Next executable tasks:
-  - `PT-11` migration bootstrap
   - `PT-12` admin auth boundary
   - `PT-9` deployment and cron conventions
+  - `PT-15` Telegram cron flow
 
 ## UI Approval Queue
 

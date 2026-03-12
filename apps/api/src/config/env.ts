@@ -21,8 +21,7 @@ const envSchema = z.object({
   THREADS_APP_SECRET: z.string().optional(),
   THREADS_ACCESS_TOKEN: z.string().optional(),
   THREADS_USER_ID: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_RECIPIENT: z.string().email().optional()
+  TELEGRAM_BOT_TOKEN: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -33,4 +32,3 @@ if (!parsedEnv.success) {
 }
 
 export const env = parsedEnv.data;
-
