@@ -1,13 +1,17 @@
 import express from "express";
 import { env } from "./config/env";
 import { cronRouter } from "./routes/cron";
+import { draftsRouter } from "./routes/drafts";
 import { threadsRouter } from "./routes/integrations/threads";
+import { profileMaterialsRouter } from "./routes/profile-materials";
 import {
   AuthenticatedRequest,
   requireAdminAuth
 } from "./middleware/auth";
+import { errorHandler } from "./middleware/error-handler";
 import { sendTelegramMessage } from "./lib/telegram/client";
 import { renderDraftPreviewMessage } from "./lib/telegram/templates";
+import { asyncHandler } from "./lib/http/async-handler";
 
 const app = express();
 const port = env.PORT;
@@ -37,7 +41,7 @@ app.get(
 app.post(
   "/admin/telegram/test",
   requireAdminAuth,
-  async (request: AuthenticatedRequest, response) => {
+  asyncHandler(async (request: AuthenticatedRequest, response) => {
     const text =
       request.body?.text ??
       renderDraftPreviewMessage({
@@ -60,11 +64,14 @@ app.post(
       admin: request.adminUser,
       telegramResponse
     });
-  }
+  })
 );
 
 app.use("/cron", cronRouter);
+app.use("/api/drafts", draftsRouter);
+app.use("/api/profile-materials", profileMaterialsRouter);
 app.use("/integrations/threads", threadsRouter);
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`API server listening on port ${port}`);

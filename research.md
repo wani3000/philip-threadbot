@@ -99,7 +99,7 @@ Current state:
 - protected cron routes now execute job runner logic with deterministic `run_key` handling
 - Telegram bot client and preview message template are now wired behind an admin test endpoint
 - Threads OAuth/publish client and integration routes are now wired for token exchange and test publishing
-- no feature endpoints are implemented yet
+- provider abstraction, draft generation, and profile material CRUD APIs are now scaffolded behind protected routes
 
 ### 4.3 Planned support areas not yet created
 
@@ -187,6 +187,15 @@ After bootstrap:
 - `POST /admin/telegram/test`
   - requires bearer token and admin allowlist match
   - purpose: verify Telegram bot delivery and preview message formatting before the scheduled flow is attached
+- `GET /api/profile-materials`
+- `POST /api/profile-materials`
+- `PATCH /api/profile-materials/:id`
+- `DELETE /api/profile-materials/:id`
+  - requires bearer token and admin allowlist match
+  - purpose: manage structured source material
+- `POST /api/drafts/generate`
+  - requires bearer token and admin allowlist match
+  - purpose: select source material, run the chosen AI provider, and persist a draft row
 - `GET /integrations/threads/oauth/start`
 - `GET /integrations/threads/oauth/callback`
 - `POST /integrations/threads/publish-test`
@@ -226,7 +235,7 @@ Threads:
 - `GET /api/integrations/threads/oauth/callback`
 - `GET /api/integrations/threads/status`
 
-These are design targets only. They do not exist yet.
+The remaining endpoints in this section are design targets if they are not listed above as already implemented.
 
 ## 8. Technology Stack Analysis
 
@@ -238,6 +247,7 @@ These are design targets only. They do not exist yet.
 - Language: TypeScript
 - Tooling: ESLint, Prettier
 - Environment validation: dotenv + zod in API bootstrap
+- API integrations: direct HTTP clients for Anthropic, OpenAI Responses API, Gemini generateContent, Telegram Bot API, and Threads Graph API
 
 ### 8.2 Planned runtime stack
 

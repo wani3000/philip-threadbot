@@ -190,8 +190,8 @@ Iteration:
 - Pending feedback.
 
 Todo List:
-- `[ ]` `PT-13` provider abstraction — agent: Codex
-- `[ ]` `PT-14` draft generation pipeline — agent: Codex
+- `[x]` `PT-13` provider abstraction — agent: Codex
+- `[x]` `PT-14` draft generation pipeline — agent: Codex
 - `[ ]` `PT-16` non-visual AI settings wiring — agent: Codex
 
 ## PT-4 Scheduling, Telegram notifications, and Threads publishing automation
@@ -306,7 +306,7 @@ Iteration:
 - Pending feedback.
 
 Todo List:
-- `[ ]` `PT-19` profile CRUD APIs — agent: Codex
+- `[x]` `PT-19` profile CRUD APIs — agent: Codex
 - `[ ]` `PT-20` dashboard data flows — agent: Codex
 - `[ ]` `PT-21` home dashboard UI — agent: Codex — `🔒 승인 대기`
 - `[ ]` `PT-22` management/calendar/library UI — agent: Codex — `🔒 승인 대기`
