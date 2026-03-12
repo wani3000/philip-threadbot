@@ -28,10 +28,11 @@ Initial setup is now in progress. The repository started empty, so the current f
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
+  - `PT-9` `[INFRA] Establish deployment targets and cron entrypoint conventions`
   - `PT-10` `[DB] Design initial Supabase schema and migration plan`
   - `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
   - `PT-12` `[BE] Implement admin authentication boundary`
-- Next planned executable task: `PT-9` `[INFRA] Establish deployment targets and cron entrypoint conventions`
+- Next planned executable task: `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications`
 
 ## Work Status
 
@@ -43,10 +44,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - first-pass database schema PRD
   - initial Supabase migration and seed files
   - admin auth boundary scaffold for API and protected dashboard paths
+  - deployment notes and protected cron endpoint scaffold
 - Next executable tasks:
-  - `PT-9` deployment and cron conventions
   - `PT-15` Telegram cron flow
   - `PT-17` Telegram bot delivery
+  - `PT-18` Threads publishing workflow
 
 ## UI Approval Queue
 
@@ -63,6 +65,8 @@ These tasks remain locked until developer approval.
   - Jira-mapped execution document with implementation notes, pseudocode, and todo state.
 - `docs/db-schema.md`
   - First-pass data model, lifecycle states, indexing strategy, and operational schema notes.
+- `docs/deployment.md`
+  - Deployment split, environment ownership, cron contracts, and security rules.
 
 ## Commit Convention
 

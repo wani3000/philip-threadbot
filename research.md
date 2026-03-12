@@ -96,6 +96,7 @@ Expected responsibilities:
 Current state:
 - only a minimal Express health server exists after bootstrap
 - admin-only API middleware now validates Supabase bearer tokens against an env-backed admin allowlist
+- protected cron route placeholders now exist for draft generation, Telegram delivery, and publishing
 - no feature endpoints are implemented yet
 
 ### 4.3 Planned support areas not yet created
@@ -181,6 +182,11 @@ After bootstrap:
 - `GET /admin/health`
   - requires bearer token and admin allowlist match
   - purpose: verify the server-side auth boundary before real admin APIs are added
+- `POST /cron/generate-daily-draft`
+- `POST /cron/send-daily-telegram`
+- `POST /cron/publish-approved-posts`
+  - each requires `x-cron-secret`
+  - current purpose: reserve protected entrypoints and deployment contract before job logic is implemented
 
 ### 7.2 Planned endpoint families
 

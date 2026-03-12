@@ -71,7 +71,7 @@ Iteration:
 Todo List:
 - `[x]` `PT-7` bootstrap monorepo and baseline tooling — agent: Codex
 - `[x]` `PT-8` environment variable contract — agent: Codex
-- `[ ]` `PT-9` deployment and cron conventions — agent: Codex
+- `[x]` `PT-9` deployment and cron conventions — agent: Codex
 
 ## PT-2 Data model and authentication foundation
 

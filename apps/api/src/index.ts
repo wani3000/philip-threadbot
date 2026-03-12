@@ -1,5 +1,6 @@
 import express from "express";
 import { env } from "./config/env";
+import { cronRouter } from "./routes/cron";
 import {
   AuthenticatedRequest,
   requireAdminAuth
@@ -7,6 +8,8 @@ import {
 
 const app = express();
 const port = env.PORT;
+
+app.use(express.json());
 
 app.get("/health", (_request, response) => {
   response.json({
@@ -27,6 +30,8 @@ app.get(
     });
   }
 );
+
+app.use("/cron", cronRouter);
 
 app.listen(port, () => {
   console.log(`API server listening on port ${port}`);
