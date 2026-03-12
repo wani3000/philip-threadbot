@@ -495,3 +495,61 @@ Todo List:
 
 - `[x]` `PT-26` session token forwarding and admin auth integration — agent: Codex
 - `[x]` `PT-27` login/logout flow and route protection — agent: Codex
+
+## PT-29 원재료 카테고리 구조 정합성 반영
+
+Subtasks:
+
+- `PT-28` `[DB] 원재료 카테고리 enum·마이그레이션·데모 데이터 정합성 반영` — executable now
+
+Approach:
+
+- Treat `/Users/chulwan/Downloads/philip_content_database.docx` as the canonical source for profile material categories.
+- Update schema, validation, demo data, and dashboard labels together so category drift does not reappear later.
+- Support both fresh bootstrap and existing seeded databases with an explicit migration path.
+
+Implementation plan:
+
+`PT-28`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/migrations/0001_initial.sql`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/migrations/0003_profile_category_restructure.sql`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/seed.sql`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/profile-material/categories.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/validation/profile-material.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/types.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/routes/posts.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/demo-store.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/profile-categories.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/profile/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/library/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/docs/db-schema.md`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/README.md`
+- Pseudocode:
+
+```text
+replace legacy category enum with 6 canonical buckets
+map existing values during migration:
+  teaching + online_course -> teaching_mentoring
+  insight -> designer_insight
+  business -> startup_story
+rewrite posts.source_snapshot.category for historical drafts
+align API validation and draft regeneration types
+align dashboard category options and labels
+seed demo data across all 6 categories
+```
+
+- Constraints:
+  - Preserve local demo mode.
+  - Keep Korean labels identical to the source document.
+  - Avoid losing historical post-category context during migration.
+
+Iteration:
+
+- 2026-03-13: `philip_content_database.docx` was adopted as the canonical category source for DB and dashboard structure.
+
+Todo List:
+
+- `[x]` `PT-28` category schema alignment and migration safety — agent: Codex

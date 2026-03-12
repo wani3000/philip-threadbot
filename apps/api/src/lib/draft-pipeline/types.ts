@@ -1,15 +1,9 @@
 import { AiProviderName } from "../ai/types";
+import { ProfileMaterialCategory } from "../profile-material/categories";
 
 export type ProfileMaterialRecord = {
   id: string;
-  category:
-    | "career"
-    | "project"
-    | "teaching"
-    | "online_course"
-    | "insight"
-    | "vibe_coding"
-    | "business";
+  category: ProfileMaterialCategory;
   title: string;
   content: string;
   tags: string[];

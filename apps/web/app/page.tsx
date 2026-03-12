@@ -15,6 +15,10 @@ import {
   regeneratePostAction,
   updatePostAction
 } from "./actions";
+import {
+  getProfileCategoryLabel,
+  profileCategoryOptions
+} from "../lib/profile-categories";
 
 function getTomorrowRange() {
   const now = new Date();
@@ -110,7 +114,9 @@ export default async function HomePage() {
                   <span>{tomorrowPost.ai_provider}</span>
                   <span>{tomorrowPost.ai_model}</span>
                   <span>
-                    {tomorrowPost.source_snapshot?.category ?? "카테고리 없음"}
+                    {getProfileCategoryLabel(
+                      tomorrowPost.source_snapshot?.category
+                    )}
                   </span>
                 </div>
                 <form action={updatePostAction} className="form-grid">
@@ -205,13 +211,11 @@ export default async function HomePage() {
                   <label htmlFor="category">카테고리 선택</label>
                   <select defaultValue="" id="category" name="category">
                     <option value="">자동 선택</option>
-                    <option value="career">경력</option>
-                    <option value="project">프로젝트</option>
-                    <option value="teaching">강의</option>
-                    <option value="online_course">온라인 강의</option>
-                    <option value="insight">인사이트</option>
-                    <option value="vibe_coding">바이브코딩</option>
-                    <option value="business">사업 경험</option>
+                    {profileCategoryOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">

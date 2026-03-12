@@ -27,11 +27,21 @@ This schema intentionally favors explicit lifecycle columns and operational trac
 
 - `career`
 - `project`
-- `teaching`
-- `online_course`
-- `insight`
+- `startup_story`
+- `teaching_mentoring`
+- `designer_insight`
 - `vibe_coding`
-- `business`
+
+Notes:
+
+- The canonical category structure mirrors `/Users/chulwan/Downloads/philip_content_database.docx`.
+- Korean dashboard buckets map directly as:
+  - `경력` -> `career`
+  - `프로젝트` -> `project`
+  - `창업스토리` -> `startup_story`
+  - `강의멘토링` -> `teaching_mentoring`
+  - `디자이너인사이트` -> `designer_insight`
+  - `바이브코딩` -> `vibe_coding`
 
 ### `material_priority`
 

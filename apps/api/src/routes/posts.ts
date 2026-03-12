@@ -2,6 +2,7 @@ import { Router } from "express";
 import { recordAuditEvent } from "../lib/audit";
 import { generateDraftFromProfile } from "../lib/draft-pipeline";
 import { asyncHandler } from "../lib/http/async-handler";
+import { ProfileMaterialCategory } from "../lib/profile-material/categories";
 import { createSupabaseAdminClient } from "../lib/supabase";
 import { getDemoPost, listDemoPosts, updateDemoPost } from "../lib/demo-store";
 import { isDemoModeEnabled } from "../lib/runtime";
@@ -158,13 +159,7 @@ postsRouter.post(
       profileId: existingPost.profile_id ?? undefined,
       category:
         (existingPost.source_snapshot?.category as
-          | "career"
-          | "project"
-          | "teaching"
-          | "online_course"
-          | "insight"
-          | "vibe_coding"
-          | "business"
+          | ProfileMaterialCategory
           | undefined) ?? undefined,
       provider: input.provider,
       model: input.model,

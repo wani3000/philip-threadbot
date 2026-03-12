@@ -8,6 +8,10 @@ import {
   updateProfileMaterialAction
 } from "../actions";
 import { fetchProfileMaterials } from "../../lib/api";
+import {
+  getProfileCategoryLabel,
+  profileCategoryOptions
+} from "../../lib/profile-categories";
 
 export default async function ProfilePage() {
   try {
@@ -17,7 +21,7 @@ export default async function ProfilePage() {
       <AppShell
         pathname="/profile"
         title="프로필 원재료"
-        description="필립의 경력, 프로젝트, 강의 경험, 인사이트를 구조화해서 AI 초안의 원재료로 관리합니다."
+        description="필립의 경력, 프로젝트, 창업스토리, 강의멘토링, 디자이너인사이트, 바이브코딩을 구조화해서 AI 초안의 원재료로 관리합니다."
       >
         <div className="grid two">
           <section className="card">
@@ -31,13 +35,11 @@ export default async function ProfilePage() {
                 <div className="field">
                   <label htmlFor="category">카테고리</label>
                   <select id="category" name="category" defaultValue="career">
-                    <option value="career">경력</option>
-                    <option value="project">프로젝트</option>
-                    <option value="teaching">강의</option>
-                    <option value="online_course">온라인 강의</option>
-                    <option value="insight">인사이트</option>
-                    <option value="vibe_coding">바이브코딩</option>
-                    <option value="business">사업 경험</option>
+                    {profileCategoryOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">
@@ -109,7 +111,7 @@ export default async function ProfilePage() {
               ).map(([category, count]) => (
                 <div className="item" key={category}>
                   <div className="item-head">
-                    <strong>{category}</strong>
+                    <strong>{getProfileCategoryLabel(category)}</strong>
                     <span>{count}개</span>
                   </div>
                 </div>
@@ -138,7 +140,7 @@ export default async function ProfilePage() {
                     <div>
                       <strong>{item.title}</strong>
                       <div className="item-meta">
-                        <span>{item.category}</span>
+                        <span>{getProfileCategoryLabel(item.category)}</span>
                         <span>우선순위 {item.priority}</span>
                         <span>사용 {item.used_count}회</span>
                         <span>
@@ -163,13 +165,11 @@ export default async function ProfilePage() {
                     <div className="field">
                       <label>카테고리</label>
                       <select defaultValue={item.category} name="category">
-                        <option value="career">경력</option>
-                        <option value="project">프로젝트</option>
-                        <option value="teaching">강의</option>
-                        <option value="online_course">온라인 강의</option>
-                        <option value="insight">인사이트</option>
-                        <option value="vibe_coding">바이브코딩</option>
-                        <option value="business">사업 경험</option>
+                        {profileCategoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

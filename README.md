@@ -34,7 +34,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-25` 관리자 인증 고도화
+- Current representative task: `PT-29` 원재료 카테고리 구조 정합성 반영
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -56,6 +56,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-24` `[INFRA] 테스트 전략, CI 체크, 릴리즈 게이트 정의`
   - `PT-26` `[BE] Supabase 세션 기반 관리자 인증 연동`
   - `PT-27` `[FE] 로그인·로그아웃 흐름 및 보호 경로 정리`
+  - `PT-28` `[DB] 원재료 카테고리 enum·마이그레이션·데모 데이터 정합성 반영`
 - Next planned executable task: Threads 실계정 연결 및 운영 검증
 
 ## Work Status
@@ -110,6 +111,7 @@ The web dashboard now supports Supabase session login and forwards the session a
 - In local development, the API can run in demo mode without Supabase and external provider keys.
 - Demo mode provides sample profile materials, sample scheduled posts, local auth via `ADMIN_BEARER_TOKEN`, simulated AI draft generation, simulated Telegram delivery, and recent audit log data.
 - Live mode에서는 `/login`에서 Supabase 관리자 계정으로 로그인하면 같은 세션으로 대시보드와 API가 연결됩니다.
+- 프로필 원재료의 기준 카테고리는 `경력`, `프로젝트`, `창업스토리`, `강의멘토링`, `디자이너인사이트`, `바이브코딩` 여섯 가지로 고정되어 있습니다.
 - This is the intended review state before real Threads credentials are supplied.
 
 ## Commit Convention

@@ -85,6 +85,18 @@ function tomorrowAt(hours: number, minutes: number) {
 const demoMaterials: ProfileMaterialRecord[] = [
   {
     id: "demo-material-1",
+    category: "career",
+    title: "웁살라시큐리티 합류와 블록체인 커리어 전환",
+    content:
+      "대학교를 졸업하고 블록체인이 뭔지도 잘 모르던 시기에 싱가포르 블록체인 스타트업 웁살라시큐리티에 첫 디자이너로 합류했습니다. 이후 40명 규모로 성장하는 과정에서 UX 리드를 맡았고, 경찰청, 카카오, 삼성전자, 인터폴이 쓰는 AML 제품 경험을 설계했습니다.",
+    tags: ["웁살라시큐리티", "블록체인", "핀테크", "싱가포르"],
+    priority: "high",
+    used_count: 4,
+    last_used_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+    is_active: true
+  },
+  {
+    id: "demo-material-2",
     category: "project",
     title: "암호화폐 트래킹 툴 정보구조 개선",
     content:
@@ -96,24 +108,48 @@ const demoMaterials: ProfileMaterialRecord[] = [
     is_active: true
   },
   {
-    id: "demo-material-2",
-    category: "teaching",
-    title: "비전공자 대상 UX 강의",
+    id: "demo-material-3",
+    category: "startup_story",
+    title: "두닷두 창업 실패에서 배운 하드웨어 제약",
     content:
-      "비전공 수강생 120명을 대상으로 Figma와 UX 리서치 기초를 가르쳤고, 실습 중심 커리큘럼으로 완주율을 높였습니다. 막히는 지점을 수업 구조로 풀었던 경험이 있습니다.",
-    tags: ["UX강의", "Figma", "디자인교육"],
+      "홍익대 재학 중 호텔 관리용 스마트워치 서비스를 창업해 미국 샌디에고 호텔 현장까지 가서 테스트했습니다. 투자와 MOU를 만들었지만, 스마트워치 배터리가 1~2시간 만에 닳는 물리적 한계를 간과해 결국 실패했습니다.",
+    tags: ["창업실패", "스마트워치", "호텔관리", "서비스설계"],
     priority: "medium",
-    used_count: 1,
+    used_count: 2,
     last_used_at: new Date(Date.now() - 86400000 * 12).toISOString(),
     is_active: true
   },
   {
-    id: "demo-material-3",
-    category: "vibe_coding",
-    title: "바이브코딩으로 빠르게 랜딩페이지 제작",
+    id: "demo-material-4",
+    category: "teaching_mentoring",
+    title: "Apple Developer Academy 포트폴리오 강연",
     content:
-      "짧은 기간 안에 바이브코딩 방식으로 웹사이트를 만들면서, 디자이너가 구조를 잡고 개발 속도를 높이는 협업 방식을 실험했습니다. 기획-디자인-구현의 핸드오프 비용이 크게 줄었습니다.",
-    tags: ["바이브코딩", "랜딩페이지", "프로덕트디자인"],
+      "Apple Developer Academy와 대학 특강에서 프로덕트 디자이너 커리어, 포트폴리오, UX 실무를 강의했습니다. 실무 프로젝트에서 겪은 시행착오를 커리큘럼으로 바꿨고, 초보 디자이너가 막히는 지점을 예시 중심으로 풀어냈습니다.",
+    tags: ["강의", "멘토링", "AppleDeveloperAcademy", "포트폴리오"],
+    priority: "medium",
+    used_count: 1,
+    last_used_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+    is_active: true
+  },
+  {
+    id: "demo-material-5",
+    category: "designer_insight",
+    title: "포트폴리오보다 결과물이 먼저 읽힌다",
+    content:
+      "학교 프로젝트였던 Florence 모바일 EMR을 제대로 밀어붙였더니 삼성서울병원 디지털헬스케어연구센터에서 직접 구현 문의가 왔습니다. 디자이너 취업 준비에서도 결국 중요한 건 예쁜 정리가 아니라 왜 만들었고 어떤 결과를 냈는지입니다.",
+    tags: ["디자이너취업", "포트폴리오", "커리어조언", "UX리서치"],
+    priority: "high",
+    used_count: 0,
+    last_used_at: null,
+    is_active: true
+  },
+  {
+    id: "demo-material-6",
+    category: "vibe_coding",
+    title: "디자이너의 바이브코딩 랜딩페이지 제작 경험",
+    content:
+      "Claude Code, Cursor, Replit을 실무에 적용하면서 Figma 시안을 실제 웹사이트로 빠르게 옮기는 방식을 만들었습니다. 한화생명 PLUS Pi 랜딩페이지 HTML 컴포넌트와 개인 프로젝트들을 통해 기획-디자인-구현 사이 핸드오프 비용을 줄였습니다.",
+    tags: ["바이브코딩", "ClaudeCode", "Cursor", "랜딩페이지수주"],
     priority: "medium",
     used_count: 0,
     last_used_at: null,
@@ -124,13 +160,13 @@ const demoMaterials: ProfileMaterialRecord[] = [
 const demoPosts: DemoPost[] = [
   {
     id: "demo-post-1",
-    profile_id: "demo-material-1",
+    profile_id: "demo-material-2",
     source_snapshot: {
       title: "암호화폐 트래킹 툴 정보구조 개선",
       category: "project",
       tags: ["UX디자인", "블록체인", "데이터시각화", "디자이너"]
     },
-    raw_content: demoMaterials[0].content,
+    raw_content: demoMaterials[1].content,
     generated_content:
       "수백 개의 트랜잭션을 한 줄씩 뒤지던 장면이 먼저 떠오릅니다.\n\n문제는 데이터 부족이 아니라 구조 부재였습니다. 제가 직접 정보 계층을 다시 그렸을 때, 수사 흐름은 미로에서 지도처럼 바뀌었습니다.\n\n그 결과 신고 800건, 2400억 규모의 흐름을 더 빠르게 읽을 수 있는 툴이 됐습니다.\n\n#UX디자인 #블록체인 #데이터시각화 #디자이너",
     edited_content: null,
@@ -143,8 +179,8 @@ const demoPosts: DemoPost[] = [
     thread_id: null,
     thread_permalink: null,
     generation_notes: {
-      title: demoMaterials[0].title,
-      tags: demoMaterials[0].tags
+      title: demoMaterials[1].title,
+      tags: demoMaterials[1].tags
     },
     created_at: nowIso(),
     updated_at: nowIso()

@@ -1,14 +1,7 @@
 import { z } from "zod";
+import { profileMaterialCategories } from "../profile-material/categories";
 
-export const profileMaterialCategorySchema = z.enum([
-  "career",
-  "project",
-  "teaching",
-  "online_course",
-  "insight",
-  "vibe_coding",
-  "business"
-]);
+export const profileMaterialCategorySchema = z.enum(profileMaterialCategories);
 
 export const profileMaterialPrioritySchema = z.enum(["high", "medium", "low"]);
 

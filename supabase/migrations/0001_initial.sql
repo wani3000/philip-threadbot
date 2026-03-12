@@ -3,11 +3,10 @@ create extension if not exists pgcrypto;
 create type profile_category as enum (
   'career',
   'project',
-  'teaching',
-  'online_course',
-  'insight',
-  'vibe_coding',
-  'business'
+  'startup_story',
+  'teaching_mentoring',
+  'designer_insight',
+  'vibe_coding'
 );
 
 create type material_priority as enum ('high', 'medium', 'low');
@@ -173,4 +172,3 @@ create table publish_attempts (
 
 create index publish_attempts_post_attempt_idx
   on publish_attempts (post_id, attempt_number desc);
-

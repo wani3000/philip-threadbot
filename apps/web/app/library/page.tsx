@@ -4,6 +4,7 @@ import { EmptyState } from "../../components/empty-state";
 import { ErrorPanel } from "../../components/error-panel";
 import { StatusBadge } from "../../components/status-badge";
 import { fetchPosts } from "../../lib/api";
+import { getProfileCategoryLabel } from "../../lib/profile-categories";
 
 export default async function LibraryPage() {
   try {
@@ -32,7 +33,9 @@ export default async function LibraryPage() {
                     <div className="item-meta">
                       <span>{formatDateTime(post.created_at)}</span>
                       <span>
-                        {post.source_snapshot?.category ?? "category 없음"}
+                        {getProfileCategoryLabel(
+                          post.source_snapshot?.category
+                        )}
                       </span>
                       <span>{post.ai_provider}</span>
                       <span>{post.ai_model}</span>
