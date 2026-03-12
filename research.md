@@ -96,7 +96,7 @@ Expected responsibilities:
 Current state:
 - only a minimal Express health server exists after bootstrap
 - admin-only API middleware now validates Supabase bearer tokens against an env-backed admin allowlist
-- protected cron route placeholders now exist for draft generation, Telegram delivery, and publishing
+- protected cron routes now execute job runner logic with deterministic `run_key` handling
 - no feature endpoints are implemented yet
 
 ### 4.3 Planned support areas not yet created
@@ -186,7 +186,7 @@ After bootstrap:
 - `POST /cron/send-daily-telegram`
 - `POST /cron/publish-approved-posts`
   - each requires `x-cron-secret`
-  - current purpose: reserve protected entrypoints and deployment contract before job logic is implemented
+  - current purpose: establish protected entrypoints and `job_runs`-based execution flow before business logic is implemented
 
 ### 7.2 Planned endpoint families
 

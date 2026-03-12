@@ -32,7 +32,8 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-10` `[DB] Design initial Supabase schema and migration plan`
   - `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
   - `PT-12` `[BE] Implement admin authentication boundary`
-- Next planned executable task: `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications`
+  - `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications`
+- Next planned executable task: `PT-17` `[BE] Integrate draft notification Telegram bot delivery`
 
 ## Work Status
 
@@ -45,10 +46,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - initial Supabase migration and seed files
   - admin auth boundary scaffold for API and protected dashboard paths
   - deployment notes and protected cron endpoint scaffold
+  - `job_runs`-based cron runner and idempotent run-key flow
 - Next executable tasks:
-  - `PT-15` Telegram cron flow
   - `PT-17` Telegram bot delivery
   - `PT-18` Threads publishing workflow
+  - `PT-13` AI provider abstraction
 
 ## UI Approval Queue
 

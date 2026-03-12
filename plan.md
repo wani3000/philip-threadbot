@@ -215,7 +215,7 @@ Implementation plan:
 ```text
 verify cron secret
 generate next-day draft at night
-send morning digest
+send morning telegram preview
 mark run results
 ```
 
@@ -247,7 +247,7 @@ Iteration:
 - Pending feedback.
 
 Todo List:
-- `[ ]` `PT-15` cron jobs — agent: Codex
+- `[x]` `PT-15` cron jobs — agent: Codex
 - `[ ]` `PT-17` Telegram delivery — agent: Codex
 - `[ ]` `PT-18` Threads workflow — agent: Codex
 
