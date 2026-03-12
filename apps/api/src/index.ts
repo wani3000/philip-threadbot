@@ -1,8 +1,10 @@
 import express from "express";
 import { env } from "./config/env";
+import { aiSettingsRouter } from "./routes/ai-settings";
 import { cronRouter } from "./routes/cron";
 import { draftsRouter } from "./routes/drafts";
 import { threadsRouter } from "./routes/integrations/threads";
+import { postsRouter } from "./routes/posts";
 import { profileMaterialsRouter } from "./routes/profile-materials";
 import {
   AuthenticatedRequest,
@@ -17,6 +19,7 @@ const app = express();
 const port = env.PORT;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_request, response) => {
   response.json({
@@ -68,7 +71,9 @@ app.post(
 );
 
 app.use("/cron", cronRouter);
+app.use("/api/ai-settings", aiSettingsRouter);
 app.use("/api/drafts", draftsRouter);
+app.use("/api/posts", postsRouter);
 app.use("/api/profile-materials", profileMaterialsRouter);
 app.use("/integrations/threads", threadsRouter);
 app.use(errorHandler);

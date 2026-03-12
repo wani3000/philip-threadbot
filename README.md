@@ -35,10 +35,14 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-13` `[BE] Claude, OpenAI, Gemini용 AI 제공자 추상화 구현`
   - `PT-14` `[BE] 프로필 원재료 기반 초안 생성 파이프라인 구현`
   - `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications`
+  - `PT-16` `[FE] 모델 선택 및 재생성용 비시각 로직 구현`
   - `PT-17` `[BE] Integrate draft notification Telegram bot delivery`
   - `PT-18` `[BE] Implement Threads OAuth and publishing workflow`
   - `PT-19` `[BE] 프로필 원재료 CRUD API 및 검증 구현`
-- Next planned executable task: `PT-16` `[FE] Implement non-visual settings/actions for model selection and regeneration`
+  - `PT-20` `[FE] 초안 검토 및 스케줄 운영 데이터 흐름 구현`
+  - `PT-21` `[UI] 홈 대시보드 및 내일 게시 예정 검토 화면 구성`
+  - `PT-22` `[UI] 프로필 관리, 캘린더, 라이브러리 화면 구성`
+- Next planned executable task: `PT-23` `[BE] Add structured logging, error handling, and audit trails`
 
 ## Work Status
 
@@ -55,10 +59,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - Telegram bot client, preview formatter, and protected admin test endpoint
   - Threads OAuth/publish client and integration test routes
   - AI provider abstraction, draft generation endpoint, and profile material CRUD APIs
+  - dashboard pages for overview, profile materials, calendar, library, and AI settings
 - Next executable tasks:
-  - `PT-16` non-visual AI settings/actions
-  - `PT-20` dashboard data flows
-  - `PT-21`/`PT-22` UI tasks after approval
+  - `PT-23` structured logging and audit trail
+  - `PT-24` CI and release gate
+  - later auth hardening to replace bootstrap `ADMIN_BEARER_TOKEN` bridge
 
 ## UI Approval Queue
 
@@ -77,6 +82,10 @@ These tasks remain locked until developer approval.
   - First-pass data model, lifecycle states, indexing strategy, and operational schema notes.
 - `docs/deployment.md`
   - Deployment split, environment ownership, cron contracts, and security rules.
+
+## Runtime Note
+
+The current web dashboard uses server actions that call the API with `ADMIN_BEARER_TOKEN` on the server side. This is a bootstrap bridge until full browser-to-session auth wiring is added.
 
 ## Commit Convention
 

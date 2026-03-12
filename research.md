@@ -75,9 +75,8 @@ Expected responsibilities:
 
 Current state:
 - only a minimal shell exists after bootstrap
-- no product UI has been implemented
 - route-level middleware now blocks future dashboard paths without a Supabase session cookie
-- no approved dashboard layout work has started
+- approved dashboard UI is now implemented for overview, profile, calendar, library, and AI settings
 
 ### 4.2 `apps/api`
 
@@ -100,6 +99,7 @@ Current state:
 - Telegram bot client and preview message template are now wired behind an admin test endpoint
 - Threads OAuth/publish client and integration routes are now wired for token exchange and test publishing
 - provider abstraction, draft generation, and profile material CRUD APIs are now scaffolded behind protected routes
+- post listing/update/regeneration routes and AI settings routes now support the dashboard surface
 
 ### 4.3 Planned support areas not yet created
 
@@ -120,6 +120,10 @@ Boundary:
 - UI should remain focused on routing, rendering, forms, and invoking server capabilities.
 - Styling and screen composition are approval-gated for this project.
 - Complex provider logic, scheduling rules, Threads publishing, and persistence rules must not live in the UI layer.
+
+Current compromise:
+- the web app uses server actions that call the API with `ADMIN_BEARER_TOKEN` on the server side
+- this keeps mutations out of the browser, but it is still a bootstrap bridge until full session-bound auth wiring is added
 
 ### 5.2 Server and business layer
 
@@ -196,6 +200,15 @@ After bootstrap:
 - `POST /api/drafts/generate`
   - requires bearer token and admin allowlist match
   - purpose: select source material, run the chosen AI provider, and persist a draft row
+- `GET /api/posts`
+- `PATCH /api/posts/:id`
+- `POST /api/posts/:id/regenerate`
+  - requires bearer token and admin allowlist match
+  - purpose: drive dashboard review, schedule editing, cancellation, and draft regeneration
+- `GET /api/ai-settings`
+- `PUT /api/ai-settings`
+  - requires bearer token and admin allowlist match
+  - purpose: drive the AI settings screen and future regeneration controls
 - `GET /integrations/threads/oauth/start`
 - `GET /integrations/threads/oauth/callback`
 - `POST /integrations/threads/publish-test`
@@ -248,6 +261,7 @@ The remaining endpoints in this section are design targets if they are not liste
 - Tooling: ESLint, Prettier
 - Environment validation: dotenv + zod in API bootstrap
 - API integrations: direct HTTP clients for Anthropic, OpenAI Responses API, Gemini generateContent, Telegram Bot API, and Threads Graph API
+- UI styling: Next.js App Router with global CSS, server components, and server actions
 
 ### 8.2 Planned runtime stack
 
