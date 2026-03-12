@@ -1,12 +1,14 @@
 import express from "express";
+import { env } from "./config/env";
 
 const app = express();
-const port = Number(process.env.PORT ?? 4000);
+const port = env.PORT;
 
 app.get("/health", (_request, response) => {
   response.json({
     service: "philip-threadbot-api",
-    status: "ok"
+    status: "ok",
+    environment: env.NODE_ENV
   });
 });
 

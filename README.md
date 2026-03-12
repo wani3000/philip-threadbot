@@ -27,8 +27,9 @@ Initial setup is now in progress. The repository started empty, so the current f
 - Current representative task: `PT-2` Data model and authentication foundation
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
+  - `PT-8` `[INFRA] Set up environment variable strategy and example files`
   - `PT-10` `[DB] Design initial Supabase schema and migration plan`
-- Next planned executable task: `PT-8` `[INFRA] Set up environment variable strategy and example files`
+- Next planned executable task: `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
 
 ## Work Status
 
@@ -36,11 +37,12 @@ Initial setup is now in progress. The repository started empty, so the current f
   - initial documentation bootstrap
   - Jira task hierarchy creation
   - monorepo workspace baseline
+  - environment variable contract and API startup validation
   - first-pass database schema PRD
 - Next executable tasks:
-  - `PT-8` environment variable strategy
   - `PT-11` migration bootstrap
   - `PT-12` admin auth boundary
+  - `PT-9` deployment and cron conventions
 
 ## UI Approval Queue
 

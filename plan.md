@@ -37,7 +37,7 @@ verify local install and commands
 `PT-8`
 - Files:
   - `/Users/chulwan/Documents/GitHub/designer_threadbot/.env.example`
-  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/config/*`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/config/env.ts`
   - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/src/env/*`
 - Pseudocode:
 ```text
@@ -70,7 +70,7 @@ Iteration:
 
 Todo List:
 - `[x]` `PT-7` bootstrap monorepo and baseline tooling — agent: Codex
-- `[ ]` `PT-8` environment variable contract — agent: Codex
+- `[x]` `PT-8` environment variable contract — agent: Codex
 - `[ ]` `PT-9` deployment and cron conventions — agent: Codex
 
 ## PT-2 Data model and authentication foundation

@@ -214,6 +214,7 @@ These are design targets only. They do not exist yet.
 - Backend server shell: Express
 - Language: TypeScript
 - Tooling: ESLint, Prettier
+- Environment validation: dotenv + zod in API bootstrap
 
 ### 8.2 Planned runtime stack
 
