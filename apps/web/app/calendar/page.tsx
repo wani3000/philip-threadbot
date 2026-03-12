@@ -9,14 +9,17 @@ export default async function CalendarPage() {
   try {
     const posts = await fetchPosts({ limit: 60 });
 
-    const groups = posts.reduce<Record<string, typeof posts>>((accumulator, post) => {
-      const key = post.scheduled_at
-        ? new Date(post.scheduled_at).toISOString().slice(0, 10)
-        : "미정";
-      accumulator[key] = accumulator[key] ?? [];
-      accumulator[key].push(post);
-      return accumulator;
-    }, {});
+    const groups = posts.reduce<Record<string, typeof posts>>(
+      (accumulator, post) => {
+        const key = post.scheduled_at
+          ? new Date(post.scheduled_at).toISOString().slice(0, 10)
+          : "미정";
+        accumulator[key] = accumulator[key] ?? [];
+        accumulator[key].push(post);
+        return accumulator;
+      },
+      {}
+    );
 
     return (
       <AppShell
@@ -35,8 +38,12 @@ export default async function CalendarPage() {
               <section className="card" key={day}>
                 <div className="item-head">
                   <div>
-                    <h2 className="card-title">{day === "미정" ? "게시일 미정" : day}</h2>
-                    <p className="card-copy">{items.length}개의 글이 연결되어 있습니다.</p>
+                    <h2 className="card-title">
+                      {day === "미정" ? "게시일 미정" : day}
+                    </h2>
+                    <p className="card-copy">
+                      {items.length}개의 글이 연결되어 있습니다.
+                    </p>
                   </div>
                 </div>
                 <div className="list">
@@ -44,7 +51,9 @@ export default async function CalendarPage() {
                     <article className="item" key={post.id}>
                       <div className="item-head">
                         <div>
-                          <strong>{post.source_snapshot?.title ?? "제목 없음"}</strong>
+                          <strong>
+                            {post.source_snapshot?.title ?? "제목 없음"}
+                          </strong>
                           <div className="item-meta">
                             <span>{formatDateTime(post.scheduled_at)}</span>
                             <span>{post.ai_provider}</span>
@@ -74,11 +83,12 @@ export default async function CalendarPage() {
       >
         <ErrorPanel
           message={
-            error instanceof Error ? error.message : "캘린더 데이터를 불러오지 못했습니다."
+            error instanceof Error
+              ? error.message
+              : "캘린더 데이터를 불러오지 못했습니다."
           }
         />
       </AppShell>
     );
   }
 }
-

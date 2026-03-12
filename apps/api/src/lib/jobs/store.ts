@@ -1,4 +1,6 @@
 import { createSupabaseAdminClient } from "../supabase";
+import { createOrRestartDemoJobRun, getDemoJobRunByKey } from "../demo-store";
+import { isDemoModeEnabled } from "../runtime";
 import { JobType } from "./types";
 
 type StoredJobRun = {
@@ -8,6 +10,10 @@ type StoredJobRun = {
 };
 
 export async function getJobRunByKey(runKey: string) {
+  if (isDemoModeEnabled()) {
+    return getDemoJobRunByKey(runKey);
+  }
+
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("job_runs")
@@ -23,6 +29,10 @@ export async function getJobRunByKey(runKey: string) {
 }
 
 export async function createOrRestartJobRun(jobType: JobType, runKey: string) {
+  if (isDemoModeEnabled()) {
+    return createOrRestartDemoJobRun(jobType, runKey);
+  }
+
   const supabase = createSupabaseAdminClient();
 
   const existingRun = await getJobRunByKey(runKey);
@@ -71,4 +81,3 @@ export async function createOrRestartJobRun(jobType: JobType, runKey: string) {
     status: "started" as const
   };
 }
-

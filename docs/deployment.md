@@ -7,7 +7,7 @@
   - responsibility: admin dashboard shell and future authenticated dashboard routes
 - `apps/api`
   - deploy to Railway
-  - responsibility: business logic, cron entrypoints, Threads integration, Telegram delivery, and protected admin APIs
+  - responsibility: business logic, cron entrypoints, Threads integration, Telegram delivery, protected admin APIs, and operational logging
 
 ## 2. Environment Ownership
 
@@ -48,7 +48,7 @@ Current placeholders:
 - `POST /cron/send-daily-telegram`
 - `POST /cron/publish-approved-posts`
 
-These currently return `501 not_implemented` intentionally until the job logic lands.
+These routes are now live entrypoints and return job-run acceptance payloads backed by `job_runs` state.
 
 ## 4. Execution Order
 
@@ -58,16 +58,25 @@ Recommended daily order:
 2. Morning job sends the tomorrow-post preview via Telegram bot.
 3. Publish job posts approved scheduled content to Threads.
 
-## 5. Security Rules
+## 5. Local Review Path
+
+Before production credentials are attached, the system can run in local demo mode.
+
+- API demo mode uses in-memory sample data, simulated AI generation, and simulated Telegram delivery.
+- Web middleware can be bypassed in local review with `NEXT_PUBLIC_LOCAL_DEMO_MODE=true`.
+- This mode is intended for stakeholder review before real Threads OAuth verification.
+
+## 6. Security Rules
 
 - Cron routes must never be public.
 - Admin APIs and cron APIs must use different validation mechanisms.
 - Telegram bot token and Threads credentials stay server-side only.
 - UI work must not call publish endpoints directly without server-side authorization.
+- `LOCAL_DEMO_MODE` must remain `false` outside local development.
 
-## 6. Operational Notes
+## 7. Operational Notes
 
 - Job implementations should create deterministic `job_runs.run_key` values.
 - Re-running the same cron window should be safe.
 - Telegram preview delivery should be independent from final Threads publish success.
-
+- Audit logs should persist in Supabase outside demo mode so records survive restarts.

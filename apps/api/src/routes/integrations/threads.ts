@@ -40,33 +40,37 @@ threadsRouter.get("/oauth/callback", async (request, response) => {
   });
 });
 
-threadsRouter.post("/publish-test", requireAdminAuth, async (request, response) => {
-  const accessToken = request.body?.accessToken ?? env.THREADS_ACCESS_TOKEN;
-  const text =
-    request.body?.text ?? "Philip Threadbot test publish from admin endpoint.";
+threadsRouter.post(
+  "/publish-test",
+  requireAdminAuth,
+  async (request, response) => {
+    const accessToken = request.body?.accessToken ?? env.THREADS_ACCESS_TOKEN;
+    const text =
+      request.body?.text ??
+      "Philip Threadbot test publish from admin endpoint.";
 
-  if (!accessToken) {
-    response.status(400).json({
-      error: "Threads publish requires an access token."
+    if (!accessToken) {
+      response.status(400).json({
+        error: "Threads publish requires an access token."
+      });
+      return;
+    }
+
+    const container = await createTextThread({
+      accessToken,
+      text
     });
-    return;
+
+    const publishResult = await publishThread({
+      accessToken,
+      creationId: container.id
+    });
+
+    response.json({
+      container,
+      publishResult
+    });
   }
-
-  const container = await createTextThread({
-    accessToken,
-    text
-  });
-
-  const publishResult = await publishThread({
-    accessToken,
-    creationId: container.id
-  });
-
-  response.json({
-    container,
-    publishResult
-  });
-});
+);
 
 export { threadsRouter };
-

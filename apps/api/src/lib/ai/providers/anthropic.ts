@@ -37,13 +37,12 @@ export const anthropicProvider: AiProvider = {
       );
     }
 
-    const text =
-      Array.isArray(payload.content)
-        ? payload.content
-            .filter((item: { type?: string }) => item.type === "text")
-            .map((item: { text?: string }) => item.text ?? "")
-            .join("\n")
-        : "";
+    const text = Array.isArray(payload.content)
+      ? payload.content
+          .filter((item: { type?: string }) => item.type === "text")
+          .map((item: { text?: string }) => item.text ?? "")
+          .join("\n")
+      : "";
 
     return {
       provider: "anthropic",
@@ -53,4 +52,3 @@ export const anthropicProvider: AiProvider = {
     };
   }
 };
-

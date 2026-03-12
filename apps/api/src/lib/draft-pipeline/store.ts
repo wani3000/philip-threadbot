@@ -1,5 +1,12 @@
 import { createSupabaseAdminClient } from "../supabase";
 import {
+  createDemoGeneratedDraft,
+  getDemoAiSettings,
+  markDemoMaterialUsed,
+  selectDemoProfileMaterial
+} from "../demo-store";
+import { isDemoModeEnabled } from "../runtime";
+import {
   AiSettingsRecord,
   DraftPipelineInput,
   ProfileMaterialRecord
@@ -34,6 +41,10 @@ function scorePriority(priority: ProfileMaterialRecord["priority"]) {
 }
 
 export async function getDefaultAiSettings() {
+  if (isDemoModeEnabled()) {
+    return getDemoAiSettings();
+  }
+
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("ai_settings")
@@ -52,6 +63,10 @@ export async function getDefaultAiSettings() {
 }
 
 export async function selectProfileMaterial(input: DraftPipelineInput) {
+  if (isDemoModeEnabled()) {
+    return selectDemoProfileMaterial(input);
+  }
+
   const { data, error } = await buildMaterialQuery(input);
 
   if (error) {
@@ -85,6 +100,11 @@ export async function selectProfileMaterial(input: DraftPipelineInput) {
 }
 
 export async function markMaterialUsed(profileId: string) {
+  if (isDemoModeEnabled()) {
+    markDemoMaterialUsed(profileId);
+    return;
+  }
+
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase
@@ -125,6 +145,17 @@ export async function saveGeneratedDraft({
   rawResponse: unknown;
   scheduledAt?: string;
 }) {
+  if (isDemoModeEnabled()) {
+    return createDemoGeneratedDraft({
+      material,
+      generatedContent,
+      provider,
+      model,
+      rawResponse,
+      scheduledAt
+    });
+  }
+
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase
@@ -153,4 +184,3 @@ export async function saveGeneratedDraft({
 
   return data;
 }
-

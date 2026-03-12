@@ -11,4 +11,3 @@ export function asyncHandler(handler: AsyncHandler): RequestHandler {
     Promise.resolve(handler(request, response, next)).catch(next);
   };
 }
-

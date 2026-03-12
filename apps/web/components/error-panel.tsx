@@ -6,4 +6,3 @@ export function ErrorPanel({ message }: { message: string }) {
     </div>
   );
 }
-

@@ -1,8 +1,12 @@
 import { Router } from "express";
+import { recordAuditEvent } from "../lib/audit";
+import { upsertDemoAiSettings, getDemoAiSettings } from "../lib/demo-store";
 import { asyncHandler } from "../lib/http/async-handler";
 import { createSupabaseAdminClient } from "../lib/supabase";
+import { isDemoModeEnabled } from "../lib/runtime";
 import { requireAdminAuth } from "../middleware/auth";
 import { z } from "zod";
+import { AuthenticatedRequest } from "../middleware/auth";
 
 const aiSettingsRouter = Router();
 
@@ -21,6 +25,11 @@ aiSettingsRouter.use(requireAdminAuth);
 aiSettingsRouter.get(
   "/",
   asyncHandler(async (_request, response) => {
+    if (isDemoModeEnabled()) {
+      response.json(getDemoAiSettings());
+      return;
+    }
+
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from("ai_settings")
@@ -39,9 +48,8 @@ aiSettingsRouter.get(
 
 aiSettingsRouter.put(
   "/",
-  asyncHandler(async (request, response) => {
+  asyncHandler(async (request: AuthenticatedRequest, response) => {
     const input = aiSettingsSchema.parse(request.body);
-    const supabase = createSupabaseAdminClient();
 
     const payload = {
       default_provider: input.defaultProvider,
@@ -58,6 +66,26 @@ aiSettingsRouter.put(
           : input.defaultPostTime,
       timezone: input.timezone
     };
+
+    if (isDemoModeEnabled()) {
+      const data = upsertDemoAiSettings(payload);
+      await recordAuditEvent({
+        action: "ai_settings.updated",
+        entityType: "ai_settings",
+        entityId: data.id,
+        actorType: "admin",
+        actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+        requestId: request.requestId,
+        metadata: {
+          defaultProvider: data.default_provider,
+          defaultModel: data.default_model
+        }
+      });
+      response.json(data);
+      return;
+    }
+
+    const supabase = createSupabaseAdminClient();
 
     const { data: existing } = await supabase
       .from("ai_settings")
@@ -79,6 +107,18 @@ aiSettingsRouter.put(
       }
 
       response.json(data);
+      await recordAuditEvent({
+        action: "ai_settings.updated",
+        entityType: "ai_settings",
+        entityId: data.id,
+        actorType: "admin",
+        actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+        requestId: request.requestId,
+        metadata: {
+          defaultProvider: data.default_provider,
+          defaultModel: data.default_model
+        }
+      });
       return;
     }
 
@@ -92,9 +132,20 @@ aiSettingsRouter.put(
       throw error;
     }
 
+    await recordAuditEvent({
+      action: "ai_settings.created",
+      entityType: "ai_settings",
+      entityId: data.id,
+      actorType: "admin",
+      actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+      requestId: request.requestId,
+      metadata: {
+        defaultProvider: data.default_provider,
+        defaultModel: data.default_model
+      }
+    });
     response.status(201).json(data);
   })
 );
 
 export { aiSettingsRouter };
-

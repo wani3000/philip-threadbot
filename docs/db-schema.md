@@ -9,6 +9,7 @@ This document translates the March 2026 planning brief into a first-pass Postgre
 - review/edit/schedule lifecycle
 - Telegram notification configuration
 - Threads publishing state tracking
+- operational audit trail
 
 This schema intentionally favors explicit lifecycle columns and operational traceability over abstraction-heavy modeling.
 
@@ -72,9 +73,11 @@ This schema intentionally favors explicit lifecycle columns and operational trac
 ### 4.1 `philip_profiles`
 
 Purpose:
+
 - Stores reusable source material about Philip that the AI pipeline can turn into content.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `category profile_category not null`
 - `title text not null`
@@ -88,19 +91,23 @@ Columns:
 - `updated_at timestamptz not null default now()`
 
 Indexes:
+
 - `(category, is_active)`
 - `(priority, is_active)`
 - `(last_used_at)`
 
 Notes:
+
 - `used_count` and `last_used_at` support weighted round-robin selection.
 
 ### 4.2 `posts`
 
 Purpose:
+
 - Canonical content table for generated drafts through final publish lifecycle.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `profile_id uuid references philip_profiles(id) on delete set null`
 - `source_snapshot jsonb not null`
@@ -121,21 +128,25 @@ Columns:
 - `updated_at timestamptz not null default now()`
 
 Indexes:
+
 - `(status, scheduled_at)`
 - `(publish_status, scheduled_at)`
 - `(created_at desc)`
 - `(profile_id)`
 
 Notes:
+
 - `source_snapshot` preserves the exact source material used at generation time even if the original profile row changes later.
 - `final_content` avoids repeated coalesce logic in application code.
 
 ### 4.3 `ai_settings`
 
 Purpose:
+
 - Stores system-wide admin settings for generation and Telegram notification behavior.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `default_provider text not null`
 - `default_model text not null`
@@ -149,6 +160,7 @@ Columns:
 - `updated_at timestamptz not null default now()`
 
 Notes:
+
 - MVP expects one active settings row. Application logic should enforce singleton semantics.
 
 ## 5. Operational Tables
@@ -156,9 +168,11 @@ Notes:
 ### 5.1 `threads_accounts`
 
 Purpose:
+
 - Stores Threads integration and token metadata.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `threads_user_id text not null unique`
 - `username text`
@@ -172,9 +186,11 @@ Columns:
 ### 5.2 `job_runs`
 
 Purpose:
+
 - Audit trail for cron-triggered execution.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `job_type job_type not null`
 - `status job_status not null default 'queued'`
@@ -186,14 +202,17 @@ Columns:
 - `created_at timestamptz not null default now()`
 
 Notes:
+
 - `run_key` should be deterministic for retry safety, for example `generate_daily_draft:2026-03-13`.
 
 ### 5.3 `publish_attempts`
 
 Purpose:
+
 - Tracks every attempt to publish a post to Threads.
 
 Columns:
+
 - `id uuid primary key default gen_random_uuid()`
 - `post_id uuid not null references posts(id) on delete cascade`
 - `attempt_number integer not null`
@@ -204,7 +223,31 @@ Columns:
 - `created_at timestamptz not null default now()`
 
 Indexes:
+
 - `(post_id, attempt_number desc)`
+
+### 5.4 `audit_logs`
+
+Purpose:
+
+- Captures significant admin and system actions for debugging, accountability, and launch-readiness review.
+
+Columns:
+
+- `id uuid primary key default gen_random_uuid()`
+- `action text not null`
+- `entity_type text not null`
+- `entity_id text`
+- `actor_type text not null`
+- `actor_identifier text not null`
+- `request_id text`
+- `metadata jsonb not null default '{}'::jsonb`
+- `created_at timestamptz not null default now()`
+
+Indexes:
+
+- `(created_at desc)`
+- `(entity_type, entity_id)`
 
 ## 6. Lifecycle Rules
 
@@ -243,12 +286,14 @@ Indexes:
 - `threads_accounts`
 - `job_runs`
 - `publish_attempts`
+- `audit_logs`
 
 ### Later possible additions
 
 - `post_tags` if hashtags need separate analytics
 - `telegram_deliveries` if delivery troubleshooting becomes important
 - `post_metrics` if Threads insights become part of reporting
+- `audit_log_archives` if long-term retention becomes important
 
 ## 8. API Coupling Notes
 
@@ -259,6 +304,7 @@ Tables mapped to early APIs:
 - `ai_settings` → settings management endpoints
 - `job_runs` → cron routes and operational diagnostics
 - `publish_attempts` → publishing retry UI and logs
+- `audit_logs` → admin audit log endpoint and dashboard operations feed
 
 ## 9. Security And Access Notes
 

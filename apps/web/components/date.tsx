@@ -22,4 +22,3 @@ export function formatRelativeDate(value?: string | null) {
     day: "numeric"
   }).format(new Date(value));
 }
-

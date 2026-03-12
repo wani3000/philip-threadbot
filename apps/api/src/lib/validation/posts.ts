@@ -26,4 +26,3 @@ export const regeneratePostSchema = z.object({
   provider: z.enum(["anthropic", "openai", "gemini"]).optional(),
   model: z.string().min(1).optional()
 });
-

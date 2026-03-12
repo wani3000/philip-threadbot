@@ -36,4 +36,3 @@ export type DraftPipelineInput = {
   model?: string;
   scheduledAt?: string;
 };
-

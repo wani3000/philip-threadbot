@@ -127,4 +127,3 @@ export async function updateAiSettingsAction(formData: FormData) {
   revalidatePath("/settings/ai");
   revalidatePath("/");
 }
-

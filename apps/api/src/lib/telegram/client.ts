@@ -1,4 +1,5 @@
 import { env } from "../../config/env";
+import { isDemoModeEnabled } from "../runtime";
 
 type SendTelegramMessageInput = {
   text: string;
@@ -9,6 +10,17 @@ export async function sendTelegramMessage({
   text,
   chatId
 }: SendTelegramMessageInput) {
+  if (isDemoModeEnabled()) {
+    return {
+      ok: true,
+      result: {
+        chat_id: chatId ?? env.TELEGRAM_CHAT_ID ?? "demo-chat",
+        text,
+        simulated: true
+      }
+    };
+  }
+
   if (!env.TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not configured.");
   }
@@ -42,4 +54,3 @@ export async function sendTelegramMessage({
 
   return response.json();
 }
-

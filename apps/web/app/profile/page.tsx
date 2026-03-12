@@ -23,7 +23,8 @@ export default async function ProfilePage() {
           <section className="card">
             <h2 className="card-title">새 원재료 추가</h2>
             <p className="card-copy">
-              제목과 긴 설명을 함께 적어두면 이후 AI가 더 좋은 Threads 초안을 만들 수 있습니다.
+              제목과 긴 설명을 함께 적어두면 이후 AI가 더 좋은 Threads 초안을
+              만들 수 있습니다.
             </p>
             <form action={createProfileMaterialAction} className="form-grid">
               <div className="form-grid two">
@@ -50,15 +51,29 @@ export default async function ProfilePage() {
               </div>
               <div className="field">
                 <label htmlFor="title">제목</label>
-                <input id="title" name="title" placeholder="예: Apple Developer Academy 강의 경험" required />
+                <input
+                  id="title"
+                  name="title"
+                  placeholder="예: Apple Developer Academy 강의 경험"
+                  required
+                />
               </div>
               <div className="field">
                 <label htmlFor="content">내용</label>
-                <textarea id="content" name="content" placeholder="이 경험에서 실제로 배운 점, 사건, 결과를 길게 적어두세요." required />
+                <textarea
+                  id="content"
+                  name="content"
+                  placeholder="이 경험에서 실제로 배운 점, 사건, 결과를 길게 적어두세요."
+                  required
+                />
               </div>
               <div className="field">
                 <label htmlFor="tags">태그</label>
-                <input id="tags" name="tags" placeholder="figma, mentoring, startup" />
+                <input
+                  id="tags"
+                  name="tags"
+                  placeholder="figma, mentoring, startup"
+                />
               </div>
               <div className="actions">
                 <button className="button-primary" type="submit">
@@ -77,7 +92,9 @@ export default async function ProfilePage() {
               </div>
               <div className="metric">
                 <span className="eyebrow">활성 원재료</span>
-                <strong>{materials.filter((item) => item.is_active).length}</strong>
+                <strong>
+                  {materials.filter((item) => item.is_active).length}
+                </strong>
               </div>
             </div>
             <div className="list" style={{ marginTop: "1rem" }}>
@@ -111,7 +128,11 @@ export default async function ProfilePage() {
           ) : (
             <div className="list">
               {materials.map((item) => (
-                <form action={updateProfileMaterialAction} className="item" key={item.id}>
+                <form
+                  action={updateProfileMaterialAction}
+                  className="item"
+                  key={item.id}
+                >
                   <input name="id" type="hidden" value={item.id} />
                   <div className="item-head">
                     <div>
@@ -120,7 +141,9 @@ export default async function ProfilePage() {
                         <span>{item.category}</span>
                         <span>우선순위 {item.priority}</span>
                         <span>사용 {item.used_count}회</span>
-                        <span>최근 {formatRelativeDate(item.last_used_at)}</span>
+                        <span>
+                          최근 {formatRelativeDate(item.last_used_at)}
+                        </span>
                       </div>
                     </div>
                     <label>
@@ -205,4 +228,3 @@ export default async function ProfilePage() {
     );
   }
 }
-

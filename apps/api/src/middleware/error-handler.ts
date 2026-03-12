@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from "express";
+import { logger } from "../lib/logger";
+import { RequestWithContext } from "./request-context";
 
 export function errorHandler(
   error: unknown,
-  _request: Request,
+  request: Request,
   response: Response,
   next: NextFunction
 ) {
@@ -11,7 +13,17 @@ export function errorHandler(
   const message =
     error instanceof Error ? error.message : "Unexpected server error.";
 
+  const contextualRequest = request as RequestWithContext;
+
+  logger.error("request.failed", {
+    requestId: contextualRequest.requestId,
+    method: request.method,
+    path: request.originalUrl,
+    error
+  });
+
   response.status(500).json({
-    error: message
+    error: message,
+    requestId: contextualRequest.requestId ?? null
   });
 }

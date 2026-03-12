@@ -12,4 +12,3 @@ const providers: Record<AiProviderName, AiProvider> = {
 export function getAiProvider(providerName: AiProviderName) {
   return providers[providerName];
 }
-

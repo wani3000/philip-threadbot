@@ -21,4 +21,3 @@ export interface AiProvider {
   name: AiProviderName;
   generateText(input: GenerateTextInput): Promise<GenerateTextResult>;
 }
-

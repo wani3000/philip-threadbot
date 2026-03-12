@@ -4,8 +4,11 @@ import {
   createSupabaseAuthClient,
   hasSupabaseAuthConfig
 } from "../lib/supabase";
+import { isDemoModeEnabled } from "../lib/runtime";
+import { logger } from "../lib/logger";
+import { RequestWithContext } from "./request-context";
 
-export type AuthenticatedRequest = Request & {
+export type AuthenticatedRequest = RequestWithContext & {
   adminUser?: {
     id: string;
     email: string;
@@ -33,6 +36,27 @@ export async function requireAdminAuth(
     response.status(401).json({
       error: "Missing bearer token."
     });
+    return;
+  }
+
+  if (isDemoModeEnabled()) {
+    if (accessToken !== env.ADMIN_BEARER_TOKEN) {
+      logger.warn("auth.demo_token_rejected", {
+        requestId: request.requestId,
+        path: request.originalUrl
+      });
+      response.status(401).json({
+        error: "Invalid local admin token."
+      });
+      return;
+    }
+
+    request.adminUser = {
+      id: "demo-admin",
+      email: env.ADMIN_EMAILS[0] ?? "demo-admin@local"
+    };
+
+    next();
     return;
   }
 
@@ -75,6 +99,10 @@ export async function requireAdminAuth(
     email: normalizedEmail
   };
 
+  logger.debug("auth.admin_authenticated", {
+    requestId: request.requestId,
+    email: normalizedEmail
+  });
+
   next();
 }
-

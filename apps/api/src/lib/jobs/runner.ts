@@ -1,8 +1,9 @@
 import { env } from "../../config/env";
-import {
-  createSupabaseAdminClient,
-  hasSupabaseAuthConfig
-} from "../supabase";
+import { createSupabaseAdminClient, hasSupabaseAuthConfig } from "../supabase";
+import { markDemoJobRunSucceeded } from "../demo-store";
+import { logger } from "../logger";
+import { isDemoModeEnabled } from "../runtime";
+import { recordAuditEvent } from "../audit";
 import { createOrRestartJobRun } from "./store";
 import { JobExecutionResult, JobType } from "./types";
 
@@ -20,6 +21,11 @@ function buildRunKey(jobType: JobType, dateInput?: string) {
 }
 
 async function markJobRunSucceeded(runKey: string) {
+  if (isDemoModeEnabled()) {
+    markDemoJobRunSucceeded(runKey);
+    return;
+  }
+
   const supabase = createSupabaseAdminClient();
 
   const { error } = await supabase
@@ -36,6 +42,10 @@ async function markJobRunSucceeded(runKey: string) {
 }
 
 function assertJobConfig() {
+  if (isDemoModeEnabled()) {
+    return;
+  }
+
   if (!hasSupabaseAuthConfig || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
       "Job execution requires SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY."
@@ -55,6 +65,10 @@ export async function runJob(
   const runState = await createOrRestartJobRun(jobType, runKey);
 
   if (runState.status === "already_succeeded") {
+    logger.info("job.skipped", {
+      jobType,
+      runKey
+    });
     return {
       jobType,
       runKey,
@@ -63,6 +77,23 @@ export async function runJob(
   }
 
   await markJobRunSucceeded(runKey);
+  logger.info("job.succeeded", {
+    jobType,
+    runKey,
+    mode: isDemoModeEnabled() ? "demo" : "live"
+  });
+  await recordAuditEvent({
+    action: "job.run",
+    entityType: "job_run",
+    entityId: runKey,
+    actorType: "system",
+    actorIdentifier: "scheduler",
+    metadata: {
+      jobType,
+      runKey,
+      mode: isDemoModeEnabled() ? "demo" : "live"
+    }
+  });
 
   return {
     jobType,
@@ -70,4 +101,3 @@ export async function runJob(
     status: "started"
   };
 }
-

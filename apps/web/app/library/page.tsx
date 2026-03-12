@@ -31,7 +31,9 @@ export default async function LibraryPage() {
                     </h2>
                     <div className="item-meta">
                       <span>{formatDateTime(post.created_at)}</span>
-                      <span>{post.source_snapshot?.category ?? "category 없음"}</span>
+                      <span>
+                        {post.source_snapshot?.category ?? "category 없음"}
+                      </span>
                       <span>{post.ai_provider}</span>
                       <span>{post.ai_model}</span>
                     </div>
@@ -65,11 +67,12 @@ export default async function LibraryPage() {
       >
         <ErrorPanel
           message={
-            error instanceof Error ? error.message : "글 라이브러리를 불러오지 못했습니다."
+            error instanceof Error
+              ? error.message
+              : "글 라이브러리를 불러오지 못했습니다."
           }
         />
       </AppShell>
     );
   }
 }
-

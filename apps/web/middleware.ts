@@ -21,6 +21,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (process.env.NEXT_PUBLIC_LOCAL_DEMO_MODE === "true") {
+    return NextResponse.next();
+  }
+
   const hasSupabaseSessionCookie = request.cookies
     .getAll()
     .some((cookie) => cookie.name.startsWith("sb-"));

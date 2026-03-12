@@ -1,23 +1,26 @@
 import express from "express";
 import { env } from "./config/env";
 import { aiSettingsRouter } from "./routes/ai-settings";
+import { auditLogsRouter } from "./routes/audit-logs";
 import { cronRouter } from "./routes/cron";
 import { draftsRouter } from "./routes/drafts";
 import { threadsRouter } from "./routes/integrations/threads";
 import { postsRouter } from "./routes/posts";
 import { profileMaterialsRouter } from "./routes/profile-materials";
-import {
-  AuthenticatedRequest,
-  requireAdminAuth
-} from "./middleware/auth";
+import { AuthenticatedRequest, requireAdminAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
+import { attachRequestContext } from "./middleware/request-context";
 import { sendTelegramMessage } from "./lib/telegram/client";
 import { renderDraftPreviewMessage } from "./lib/telegram/templates";
 import { asyncHandler } from "./lib/http/async-handler";
+import { logger } from "./lib/logger";
+import { recordAuditEvent } from "./lib/audit";
+import { isDemoModeEnabled } from "./lib/runtime";
 
 const app = express();
 const port = env.PORT;
 
+app.use(attachRequestContext);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -25,7 +28,8 @@ app.get("/health", (_request, response) => {
   response.json({
     service: "philip-threadbot-api",
     status: "ok",
-    environment: env.NODE_ENV
+    environment: env.NODE_ENV,
+    mode: isDemoModeEnabled() ? "demo" : "live"
   });
 });
 
@@ -62,6 +66,18 @@ app.post(
       chatId: request.body?.chatId
     });
 
+    await recordAuditEvent({
+      action: "telegram.test_sent",
+      entityType: "telegram_delivery",
+      actorType: "admin",
+      actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+      requestId: request.requestId,
+      metadata: {
+        chatId: request.body?.chatId ?? env.TELEGRAM_CHAT_ID ?? null,
+        simulated: isDemoModeEnabled()
+      }
+    });
+
     response.status(200).json({
       ok: true,
       admin: request.adminUser,
@@ -72,6 +88,7 @@ app.post(
 
 app.use("/cron", cronRouter);
 app.use("/api/ai-settings", aiSettingsRouter);
+app.use("/api/audit-logs", auditLogsRouter);
 app.use("/api/drafts", draftsRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/profile-materials", profileMaterialsRouter);
@@ -79,5 +96,8 @@ app.use("/integrations/threads", threadsRouter);
 app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(`API server listening on port ${port}`);
+  logger.info("server.started", {
+    port,
+    mode: isDemoModeEnabled() ? "demo" : "live"
+  });
 });

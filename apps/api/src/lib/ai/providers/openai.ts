@@ -44,8 +44,8 @@ export const openAiProvider: AiProvider = {
     const text =
       payload.output_text ??
       payload.output
-        ?.flatMap((item: { content?: Array<{ text?: string }> }) =>
-          item.content ?? []
+        ?.flatMap(
+          (item: { content?: Array<{ text?: string }> }) => item.content ?? []
         )
         ?.map((item: { text?: string }) => item.text ?? "")
         ?.join("\n") ??
@@ -59,4 +59,3 @@ export const openAiProvider: AiProvider = {
     };
   }
 };
-

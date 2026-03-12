@@ -4,7 +4,7 @@ Philip Threadbot is an admin-operated automation system that turns Philip Design
 
 ## Current Context
 
-Initial setup is now in progress. The repository started empty, so the current focus is establishing project structure, execution docs, Jira hierarchy, and the first non-UI infrastructure tasks.
+Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, and pre-launch quality gates.
 
 ## Core Directory Structure
 
@@ -19,7 +19,9 @@ Initial setup is now in progress. The repository started empty, so the current f
 - Node.js + Express
 - TypeScript
 - npm workspaces
-- Planned: Supabase, Telegram Bot API, Claude/OpenAI/Gemini, Threads Graph API
+- Supabase, Telegram Bot API, Claude/OpenAI/Gemini, Threads Graph API
+- GitHub Actions CI
+- Local demo mode for pre-credential review
 
 ## Prompt Strategy
 
@@ -32,7 +34,7 @@ Initial setup is now in progress. The repository started empty, so the current f
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-2` Data model and authentication foundation
+- Current representative task: `PT-6` Quality, observability, and launch readiness
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -50,7 +52,9 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-20` `[FE] 초안 검토 및 스케줄 운영 데이터 흐름 구현`
   - `PT-21` `[UI] 홈 대시보드 및 내일 게시 예정 검토 화면 구성`
   - `PT-22` `[UI] 프로필 관리, 캘린더, 라이브러리 화면 구성`
-- Next planned executable task: `PT-23` `[BE] Add structured logging, error handling, and audit trails`
+  - `PT-23` `[BE] 구조화 로그, 에러 처리, 감사 로그 구현`
+  - `PT-24` `[INFRA] 테스트 전략, CI 체크, 릴리즈 게이트 정의`
+- Next planned executable task: Threads 실계정 연결 및 운영 검증
 
 ## Work Status
 
@@ -69,10 +73,13 @@ Initial setup is now in progress. The repository started empty, so the current f
   - AI provider abstraction, draft generation endpoint, and profile material CRUD APIs
   - dashboard pages for overview, profile materials, calendar, library, and AI settings
   - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
+  - structured request logging, request IDs, centralized error envelopes, and recent audit log surface
+  - local demo mode that works without Supabase, AI keys, Telegram token, or Threads credentials
+  - GitHub Actions CI and release checklist docs
 - Next executable tasks:
-  - `PT-23` structured logging and audit trail
-  - `PT-24` CI and release gate
-  - later auth hardening to replace bootstrap `ADMIN_BEARER_TOKEN` bridge
+  - Threads 실계정 OAuth 검증
+  - 실운영 Telegram/Threads 토큰 주입
+  - bootstrap `ADMIN_BEARER_TOKEN` bridge를 Supabase 세션 기반 인증으로 교체
 
 ## UI Approval Queue
 
@@ -88,10 +95,18 @@ Initial setup is now in progress. The repository started empty, so the current f
   - First-pass data model, lifecycle states, indexing strategy, and operational schema notes.
 - `docs/deployment.md`
   - Deployment split, environment ownership, cron contracts, and security rules.
+- `docs/release-checklist.md`
+  - Pre-launch verification checklist before real Telegram and Threads credentials are attached.
 
 ## Runtime Note
 
 The current web dashboard uses server actions that call the API with `ADMIN_BEARER_TOKEN` on the server side. This is a bootstrap bridge until full browser-to-session auth wiring is added.
+
+## Local Review Mode
+
+- In local development, the API can run in demo mode without Supabase and external provider keys.
+- Demo mode provides sample profile materials, sample scheduled posts, local auth via `ADMIN_BEARER_TOKEN`, simulated AI draft generation, simulated Telegram delivery, and recent audit log data.
+- This is the intended review state before real Threads credentials are supplied.
 
 ## Commit Convention
 

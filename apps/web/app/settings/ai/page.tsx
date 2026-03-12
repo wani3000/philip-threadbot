@@ -57,7 +57,11 @@ export default async function AiSettingsPage() {
               </div>
               <div className="field">
                 <label htmlFor="timezone">Timezone</label>
-                <input defaultValue={settings.timezone} id="timezone" name="timezone" />
+                <input
+                  defaultValue={settings.timezone}
+                  id="timezone"
+                  name="timezone"
+                />
               </div>
             </div>
             <div className="form-grid two">
@@ -98,11 +102,12 @@ export default async function AiSettingsPage() {
       >
         <ErrorPanel
           message={
-            error instanceof Error ? error.message : "AI 설정을 불러오지 못했습니다."
+            error instanceof Error
+              ? error.message
+              : "AI 설정을 불러오지 못했습니다."
           }
         />
       </AppShell>
     );
   }
 }
-

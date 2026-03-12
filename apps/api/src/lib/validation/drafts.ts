@@ -11,4 +11,3 @@ export const draftGenerateSchema = z.object({
 });
 
 export type DraftGenerateInput = z.infer<typeof draftGenerateSchema>;
-

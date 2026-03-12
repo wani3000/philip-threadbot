@@ -3,7 +3,12 @@ import { formatDateTime } from "../components/date";
 import { EmptyState } from "../components/empty-state";
 import { ErrorPanel } from "../components/error-panel";
 import { StatusBadge } from "../components/status-badge";
-import { fetchAiSettings, fetchPosts, fetchProfileMaterials } from "../lib/api";
+import {
+  fetchAiSettings,
+  fetchAuditLogs,
+  fetchPosts,
+  fetchProfileMaterials
+} from "../lib/api";
 import {
   cancelPostAction,
   generateDraftAction,
@@ -41,20 +46,22 @@ export default async function HomePage() {
     const tomorrowRange = getTomorrowRange();
     const nextWeekRange = getNextWeekRange();
 
-    const [materials, tomorrowPosts, weekPosts, settings] = await Promise.all([
-      fetchProfileMaterials(),
-      fetchPosts({
-        dateFrom: tomorrowRange.start,
-        dateTo: tomorrowRange.end,
-        limit: 5
-      }),
-      fetchPosts({
-        dateFrom: nextWeekRange.start,
-        dateTo: nextWeekRange.end,
-        limit: 14
-      }),
-      fetchAiSettings()
-    ]);
+    const [materials, tomorrowPosts, weekPosts, settings, auditLogs] =
+      await Promise.all([
+        fetchProfileMaterials(),
+        fetchPosts({
+          dateFrom: tomorrowRange.start,
+          dateTo: tomorrowRange.end,
+          limit: 5
+        }),
+        fetchPosts({
+          dateFrom: nextWeekRange.start,
+          dateTo: nextWeekRange.end,
+          limit: 14
+        }),
+        fetchAiSettings(),
+        fetchAuditLogs()
+      ]);
 
     const tomorrowPost = tomorrowPosts[0];
 
@@ -91,7 +98,9 @@ export default async function HomePage() {
                   편집, 취소, 재생성을 한 자리에서 처리합니다.
                 </p>
               </div>
-              {tomorrowPost ? <StatusBadge status={tomorrowPost.status} /> : null}
+              {tomorrowPost ? (
+                <StatusBadge status={tomorrowPost.status} />
+              ) : null}
             </div>
 
             {tomorrowPost ? (
@@ -100,7 +109,9 @@ export default async function HomePage() {
                   <span>{formatDateTime(tomorrowPost.scheduled_at)}</span>
                   <span>{tomorrowPost.ai_provider}</span>
                   <span>{tomorrowPost.ai_model}</span>
-                  <span>{tomorrowPost.source_snapshot?.category ?? "카테고리 없음"}</span>
+                  <span>
+                    {tomorrowPost.source_snapshot?.category ?? "카테고리 없음"}
+                  </span>
                 </div>
                 <form action={updatePostAction} className="form-grid">
                   <input name="id" type="hidden" value={tomorrowPost.id} />
@@ -108,7 +119,8 @@ export default async function HomePage() {
                     <label htmlFor="editedContent">최종 편집본</label>
                     <textarea
                       defaultValue={
-                        tomorrowPost.edited_content ?? tomorrowPost.generated_content
+                        tomorrowPost.edited_content ??
+                        tomorrowPost.generated_content
                       }
                       id="editedContent"
                       name="editedContent"
@@ -132,7 +144,11 @@ export default async function HomePage() {
                     </div>
                     <div className="field">
                       <label htmlFor="status">상태</label>
-                      <select defaultValue={tomorrowPost.status} id="status" name="status">
+                      <select
+                        defaultValue={tomorrowPost.status}
+                        id="status"
+                        name="status"
+                      >
                         <option value="draft">draft</option>
                         <option value="approved">approved</option>
                         <option value="scheduled">scheduled</option>
@@ -161,7 +177,8 @@ export default async function HomePage() {
                   </div>
                 </form>
                 <div className="thread-preview">
-                  {tomorrowPost.edited_content ?? tomorrowPost.generated_content}
+                  {tomorrowPost.edited_content ??
+                    tomorrowPost.generated_content}
                 </div>
               </div>
             ) : (
@@ -175,9 +192,14 @@ export default async function HomePage() {
           <section className="card">
             <h2 className="card-title">새 초안 생성</h2>
             <p className="card-copy">
-              기본 설정을 쓰되, 카테고리나 모델을 임시로 바꿔 빠르게 생성할 수 있습니다.
+              기본 설정을 쓰되, 카테고리나 모델을 임시로 바꿔 빠르게 생성할 수
+              있습니다.
             </p>
-            <form action={generateDraftAction} className="form-grid" style={{ marginTop: "1rem" }}>
+            <form
+              action={generateDraftAction}
+              className="form-grid"
+              style={{ marginTop: "1rem" }}
+            >
               <div className="form-grid two">
                 <div className="field">
                   <label htmlFor="category">카테고리 선택</label>
@@ -207,7 +229,11 @@ export default async function HomePage() {
               <div className="form-grid two">
                 <div className="field">
                   <label htmlFor="provider">제공자</label>
-                  <select defaultValue={settings.default_provider} id="provider" name="provider">
+                  <select
+                    defaultValue={settings.default_provider}
+                    id="provider"
+                    name="provider"
+                  >
                     <option value="anthropic">Anthropic</option>
                     <option value="openai">OpenAI</option>
                     <option value="gemini">Gemini</option>
@@ -215,12 +241,20 @@ export default async function HomePage() {
                 </div>
                 <div className="field">
                   <label htmlFor="model">모델</label>
-                  <input defaultValue={settings.default_model} id="model" name="model" />
+                  <input
+                    defaultValue={settings.default_model}
+                    id="model"
+                    name="model"
+                  />
                 </div>
               </div>
               <div className="field">
                 <label htmlFor="scheduledAt">게시 예정 시각</label>
-                <input id="scheduledAt" name="scheduledAt" type="datetime-local" />
+                <input
+                  id="scheduledAt"
+                  name="scheduledAt"
+                  type="datetime-local"
+                />
               </div>
               <div className="actions">
                 <button className="button-primary" type="submit">
@@ -235,7 +269,10 @@ export default async function HomePage() {
           <section className="card">
             <h2 className="card-title">이번 주 캘린더</h2>
             {weekPosts.length === 0 ? (
-              <EmptyState title="주간 일정 없음" copy="생성된 글이 쌓이면 이곳에 보입니다." />
+              <EmptyState
+                title="주간 일정 없음"
+                copy="생성된 글이 쌓이면 이곳에 보입니다."
+              />
             ) : (
               <div className="list">
                 {weekPosts.map((post) => (
@@ -282,6 +319,35 @@ export default async function HomePage() {
             </div>
           </section>
         </div>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <h2 className="card-title">최근 운영 로그</h2>
+          <p className="card-copy">
+            초안 생성, 수정, 설정 변경, 작업 실행 기록을 최근 순으로 확인합니다.
+          </p>
+          {auditLogs.length === 0 ? (
+            <EmptyState
+              title="운영 로그 없음"
+              copy="액션이 발생하면 이곳에 쌓입니다."
+            />
+          ) : (
+            <div className="list" style={{ marginTop: "1rem" }}>
+              {auditLogs.map((log) => (
+                <article className="item" key={log.id}>
+                  <div className="item-head">
+                    <strong>{log.action}</strong>
+                    <span>{formatDateTime(log.created_at)}</span>
+                  </div>
+                  <div className="item-meta">
+                    <span>{log.entity_type}</span>
+                    <span>{log.actor_identifier}</span>
+                    {log.entity_id ? <span>{log.entity_id}</span> : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </AppShell>
     );
   } catch (error) {
@@ -293,7 +359,9 @@ export default async function HomePage() {
       >
         <ErrorPanel
           message={
-            error instanceof Error ? error.message : "개요 데이터를 불러오지 못했습니다."
+            error instanceof Error
+              ? error.message
+              : "개요 데이터를 불러오지 못했습니다."
           }
         />
       </AppShell>

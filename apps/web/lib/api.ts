@@ -18,7 +18,13 @@ export type PostRecord = {
   edited_content: string | null;
   ai_provider: string;
   ai_model: string;
-  status: "draft" | "approved" | "scheduled" | "published" | "failed" | "cancelled";
+  status:
+    | "draft"
+    | "approved"
+    | "scheduled"
+    | "published"
+    | "failed"
+    | "cancelled";
   scheduled_at: string | null;
   published_at: string | null;
   thread_permalink: string | null;
@@ -39,6 +45,18 @@ export type AiSettings = {
   telegram_send_time: string;
   default_post_time: string;
   timezone: string;
+};
+
+export type AuditLogRecord = {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  actor_type: string;
+  actor_identifier: string;
+  request_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
 };
 
 type RequestOptions = RequestInit & {
@@ -103,13 +121,23 @@ export async function fetchPosts(params?: {
   if (params?.limit) searchParams.set("limit", String(params.limit));
 
   const suffix = searchParams.size ? `?${searchParams.toString()}` : "";
-  const payload = await apiRequest<{ items: PostRecord[] }>(`/api/posts${suffix}`);
+  const payload = await apiRequest<{ items: PostRecord[] }>(
+    `/api/posts${suffix}`
+  );
 
   return payload.items;
 }
 
 export async function fetchAiSettings() {
   return apiRequest<AiSettings>("/api/ai-settings");
+}
+
+export async function fetchAuditLogs(limit = 8) {
+  const payload = await apiRequest<{ items: AuditLogRecord[] }>(
+    `/api/audit-logs?limit=${limit}`
+  );
+
+  return payload.items;
 }
 
 export async function updateAiSettings(input: {
@@ -191,10 +219,12 @@ export async function updatePost(
   });
 }
 
-export async function regeneratePost(id: string, input?: { provider?: string; model?: string }) {
+export async function regeneratePost(
+  id: string,
+  input?: { provider?: string; model?: string }
+) {
   return apiRequest(`/api/posts/${id}/regenerate`, {
     method: "POST",
     body: JSON.stringify(input ?? {})
   });
 }
-

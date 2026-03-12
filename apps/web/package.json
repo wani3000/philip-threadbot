@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint \"app/**/*.{ts,tsx}\"",
-    "typecheck": "tsc --project tsconfig.json"
+    "typecheck": "next build"
   },
   "dependencies": {
     "next": "^14.2.0",

@@ -21,7 +21,8 @@ export const profileMaterialCreateSchema = z.object({
   isActive: z.boolean().default(true)
 });
 
-export const profileMaterialUpdateSchema = profileMaterialCreateSchema.partial();
+export const profileMaterialUpdateSchema =
+  profileMaterialCreateSchema.partial();
 
 export const profileMaterialQuerySchema = z.object({
   category: profileMaterialCategorySchema.optional(),
@@ -37,4 +38,3 @@ export type ProfileMaterialCreateInput = z.infer<
 export type ProfileMaterialUpdateInput = z.infer<
   typeof profileMaterialUpdateSchema
 >;
-

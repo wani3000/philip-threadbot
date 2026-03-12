@@ -26,4 +26,3 @@ export function renderDraftPreviewMessage({
 
   return lines.filter(Boolean).join("\n");
 }
-
