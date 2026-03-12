@@ -1,3 +1,7 @@
+import "server-only";
+
+import { getAdminAccessToken } from "./admin";
+
 export type ProfileMaterial = {
   id: string;
   category: string;
@@ -64,20 +68,14 @@ type RequestOptions = RequestInit & {
 };
 
 const apiUrl = process.env.API_URL ?? "http://localhost:4000";
-const adminBearerToken = process.env.ADMIN_BEARER_TOKEN;
 
 async function apiRequest<T>(path: string, options: RequestOptions = {}) {
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
 
   if (!options.skipAuth) {
-    if (!adminBearerToken) {
-      throw new Error(
-        "ADMIN_BEARER_TOKEN is not configured for the web dashboard."
-      );
-    }
-
-    headers.set("Authorization", `Bearer ${adminBearerToken}`);
+    const accessToken = await getAdminAccessToken();
+    headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
   const response = await fetch(`${apiUrl}${path}`, {

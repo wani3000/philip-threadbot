@@ -115,6 +115,7 @@ Current state:
 - request-level logging, request IDs, and centralized error envelopes are now wired into the API bootstrap
 - audit events can now be stored in Supabase or in a local in-memory store for demo mode
 - the API now has a demo-mode runtime path that works without Supabase, AI provider keys, Telegram token, or Threads credentials
+- the web app now supports Supabase session login, logout, middleware-based session refresh, and server-side token forwarding to the API
 
 ### 4.3 Planned support areas not yet created
 
@@ -197,8 +198,8 @@ Boundary:
 
 Current compromise:
 
-- the web app uses server actions that call the API with `ADMIN_BEARER_TOKEN` on the server side
-- this keeps mutations out of the browser, but it is still a bootstrap bridge until full session-bound auth wiring is added
+- the web app now prefers Supabase session access tokens for server components and server actions
+- local demo mode still falls back to `ADMIN_BEARER_TOKEN` so credential-free review remains possible
 
 ### 5.2 Server and business layer
 

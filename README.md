@@ -34,7 +34,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-6` Quality, observability, and launch readiness
+- Current representative task: `PT-25` 관리자 인증 고도화
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -54,6 +54,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-22` `[UI] 프로필 관리, 캘린더, 라이브러리 화면 구성`
   - `PT-23` `[BE] 구조화 로그, 에러 처리, 감사 로그 구현`
   - `PT-24` `[INFRA] 테스트 전략, CI 체크, 릴리즈 게이트 정의`
+  - `PT-26` `[BE] Supabase 세션 기반 관리자 인증 연동`
+  - `PT-27` `[FE] 로그인·로그아웃 흐름 및 보호 경로 정리`
 - Next planned executable task: Threads 실계정 연결 및 운영 검증
 
 ## Work Status
@@ -76,10 +78,11 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - structured request logging, request IDs, centralized error envelopes, and recent audit log surface
   - local demo mode that works without Supabase, AI keys, Telegram token, or Threads credentials
   - GitHub Actions CI and release checklist docs
+  - Supabase 세션 기반 로그인 페이지, 로그아웃 액션, 미들웨어 세션 갱신, 서버 액션 토큰 전달 연동
 - Next executable tasks:
   - Threads 실계정 OAuth 검증
   - 실운영 Telegram/Threads 토큰 주입
-  - bootstrap `ADMIN_BEARER_TOKEN` bridge를 Supabase 세션 기반 인증으로 교체
+  - Threads 테스트 게시와 운영 스케줄 실검증
 
 ## UI Approval Queue
 
@@ -100,12 +103,13 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## Runtime Note
 
-The current web dashboard uses server actions that call the API with `ADMIN_BEARER_TOKEN` on the server side. This is a bootstrap bridge until full browser-to-session auth wiring is added.
+The web dashboard now supports Supabase session login and forwards the session access token to the API on the server side. Local demo mode still keeps the `ADMIN_BEARER_TOKEN` fallback for credential-free review.
 
 ## Local Review Mode
 
 - In local development, the API can run in demo mode without Supabase and external provider keys.
 - Demo mode provides sample profile materials, sample scheduled posts, local auth via `ADMIN_BEARER_TOKEN`, simulated AI draft generation, simulated Telegram delivery, and recent audit log data.
+- Live mode에서는 `/login`에서 Supabase 관리자 계정으로 로그인하면 같은 세션으로 대시보드와 API가 연결됩니다.
 - This is the intended review state before real Threads credentials are supplied.
 
 ## Commit Convention

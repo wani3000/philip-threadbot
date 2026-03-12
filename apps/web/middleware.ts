@@ -1,47 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { updateSession } from "./lib/supabase/middleware";
 
-const protectedPrefixes = [
-  "/profile",
-  "/calendar",
-  "/library",
-  "/settings",
-  "/dashboard"
-];
-
-function isProtectedPath(pathname: string) {
-  return protectedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-}
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  if (!isProtectedPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  if (process.env.NEXT_PUBLIC_LOCAL_DEMO_MODE === "true") {
-    return NextResponse.next();
-  }
-
-  const hasSupabaseSessionCookie = request.cookies
-    .getAll()
-    .some((cookie) => cookie.name.startsWith("sb-"));
-
-  if (hasSupabaseSessionCookie) {
-    return NextResponse.next();
-  }
-
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = "/";
-  redirectUrl.searchParams.set("auth", "required");
-
-  return NextResponse.redirect(redirectUrl);
+export async function middleware(request: NextRequest) {
+  return updateSession(request);
 }
 
 export const config = {
   matcher: [
+    "/",
+    "/login",
     "/profile/:path*",
     "/calendar/:path*",
     "/library/:path*",

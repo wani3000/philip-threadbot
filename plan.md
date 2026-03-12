@@ -442,11 +442,56 @@ Todo List:
 - `[x]` `PT-23` observability and audit trail — agent: Codex
 - `[x]` `PT-24` CI and release gate — agent: Codex
 
+## PT-25 관리자 인증 고도화
+
+Subtasks:
+
+- `PT-26` `[BE] Supabase 세션 기반 관리자 인증 연동` — executable now
+- `PT-27` `[FE] 로그인·로그아웃 흐름 및 보호 경로 정리` — executable now
+
+Approach:
+
+- Replace the machine-token-only dashboard bridge with Supabase session auth wherever a real session is available.
+- Keep demo mode untouched so local review without credentials is still possible.
+
+Implementation plan:
+
+`PT-26`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/admin.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/supabase/server.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/api.ts`
+- Pseudocode:
+
+```text
+create server supabase client from cookies
+read access token from session
+forward session token to API instead of fixed bearer token
+fallback to demo token when local demo mode is enabled
+```
+
+`PT-27`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/login/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/actions.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/middleware.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/components/app-shell.tsx`
+- Pseudocode:
+
+```text
+add login form and logout action
+refresh session in middleware
+redirect unauthenticated or non-admin users to login
+show current auth mode in the shell
+```
+
 Iteration:
 
-- Pending feedback.
+- 2026-03-13: Added this task after launch-readiness work because the remaining non-credential gap was the dashboard auth bridge.
 
 Todo List:
 
-- `[ ]` `PT-23` logging and audit — agent: Codex
-- `[ ]` `PT-24` CI and release gate — agent: Codex
+- `[x]` `PT-26` session token forwarding and admin auth integration — agent: Codex
+- `[x]` `PT-27` login/logout flow and route protection — agent: Codex

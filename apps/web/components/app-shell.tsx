@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { signOutAction } from "../app/actions";
+import { getAdminSessionState } from "../lib/admin";
 
 type NavItem = {
   href: string;
@@ -15,7 +17,7 @@ const navItems: NavItem[] = [
   { href: "/settings/ai", label: "AI 설정", short: "AI" }
 ];
 
-export function AppShell({
+export async function AppShell({
   pathname,
   title,
   description,
@@ -26,6 +28,8 @@ export function AppShell({
   description: string;
   children: ReactNode;
 }) {
+  const session = await getAdminSessionState();
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -54,6 +58,14 @@ export function AppShell({
             );
           })}
         </nav>
+        <div className="sidebar-footer">
+          <span className="sidebar-meta">
+            {session.mode === "demo" ? "Demo Mode" : "Supabase Session"}
+          </span>
+          <strong className="sidebar-email">
+            {session.email ?? "로그인 필요"}
+          </strong>
+        </div>
       </aside>
       <main className="content">
         <header className="topbar">
@@ -62,6 +74,11 @@ export function AppShell({
             <h1 className="page-title">{title}</h1>
             <p className="page-copy">{description}</p>
           </div>
+          <form action={signOutAction}>
+            <button className="button-secondary" type="submit">
+              {session.mode === "demo" ? "데모 종료" : "로그아웃"}
+            </button>
+          </form>
         </header>
         {children}
       </main>
