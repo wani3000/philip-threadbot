@@ -21,6 +21,14 @@ Initial setup is now in progress. The repository started empty, so the current f
 - npm workspaces
 - Planned: Supabase, Telegram Bot API, Claude/OpenAI/Gemini, Threads Graph API
 
+## Prompt Strategy
+
+- Draft generation now uses a fixed three-stage prompt pipeline.
+- Stage 1 injects a `simon-writing`-inspired writing contract so the post starts from a scene or observation, delays the insight until the end, alternates sentence rhythm, and uses one structural metaphor.
+- Stage 2 converts the text into Philip's voice: polite tone, first-person project experience, designer vocabulary, and concrete numbers or outcomes.
+- Stage 3 optimizes the output for Threads with a hook on the first line, intentional line breaks, about 500 characters, and 3 to 5 hashtags.
+- Reference source: [juliuschun/simon-writing](https://github.com/juliuschun/simon-writing)
+
 ## Agent Ownership
 
 - Active agent: Codex
@@ -60,6 +68,7 @@ Initial setup is now in progress. The repository started empty, so the current f
   - Threads OAuth/publish client and integration test routes
   - AI provider abstraction, draft generation endpoint, and profile material CRUD APIs
   - dashboard pages for overview, profile materials, calendar, library, and AI settings
+  - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
 - Next executable tasks:
   - `PT-23` structured logging and audit trail
   - `PT-24` CI and release gate
@@ -67,10 +76,7 @@ Initial setup is now in progress. The repository started empty, so the current f
 
 ## UI Approval Queue
 
-- `PT-21` `[UI] Build home dashboard layout and tomorrow-post review surface`
-- `PT-22` `[UI] Build profile management, calendar, and library screens`
-
-These tasks remain locked until developer approval.
+- None. `PT-21` and `PT-22` were approved and implemented.
 
 ## Reference Files
 

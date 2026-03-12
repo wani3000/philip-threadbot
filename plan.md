@@ -167,13 +167,24 @@ normalize request and response shape
 - Pseudocode:
 ```text
 select source material by priority and rotation
-compose simon-writing style prompts
+compose a three-stage prompt:
+  1) simon-writing-inspired structure and rhythm
+  2) Philip-specific polite designer voice
+  3) Threads hook, line breaks, and hashtag constraints
 run provider
 apply post-processing and store draft
 ```
 - Constraints:
   - enforce character and hashtag targets
   - preserve traceability to source material and selected model
+  - keep the simon-writing contract fixed in code and append admin custom prompt as an extension rather than replacing the base rules
+
+Implementation note:
+- Prompt source reference: [juliuschun/simon-writing](https://github.com/juliuschun/simon-writing)
+- Stage contract summary:
+  - Stage 1: opening scene/observation, no `"저는"` lead, delayed insight, alternating sentence rhythm, one structural metaphor
+  - Stage 2: polite tone, Philip's first-person experience, designer vocabulary, concrete numbers/results
+  - Stage 3: first-line hook, about 500 characters, line-break rhythm, 3 to 5 hashtags
 
 `PT-16`
 - Files:

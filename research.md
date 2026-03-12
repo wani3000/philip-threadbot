@@ -100,6 +100,7 @@ Current state:
 - Threads OAuth/publish client and integration routes are now wired for token exchange and test publishing
 - provider abstraction, draft generation, and profile material CRUD APIs are now scaffolded behind protected routes
 - post listing/update/regeneration routes and AI settings routes now support the dashboard surface
+- the draft prompt builder now applies a three-stage writing contract derived from `simon-writing`, Philip voice conversion rules, and Threads-specific output constraints
 
 ### 4.3 Planned support areas not yet created
 
@@ -108,6 +109,45 @@ Current state:
 - Telegram message formatting module
 - AI provider client modules
 - Threads API integration modules
+
+### 4.4 Draft prompt design contract
+
+The draft pipeline is no longer a generic "write a Threads post" instruction. It now follows a fixed three-stage prompt contract:
+
+1. `simon-writing` style injection
+   - begin from a scene, observation, or number instead of abstract framing
+   - avoid opening with first-person self-introduction
+   - move through situation -> what Philip missed -> solution -> result
+   - let the insight arrive near the end
+   - alternate short and long sentences
+   - include one metaphor that supports the argument
+2. Philip voice conversion
+   - convert to polite Korean
+   - bring in first-person project experience
+   - use designer vocabulary around structure, visibility, user flow, and decision-making
+   - include measurable results whenever the material supports them
+3. Threads optimization
+   - keep the post around 500 characters
+   - use line breaks to shape reading rhythm
+   - make the first line act as a hook
+   - end with 3 to 5 hashtags
+
+Reference inspiration:
+- public repository: [juliuschun/simon-writing](https://github.com/juliuschun/simon-writing)
+- implementation point: `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/prompt.ts`
+
+Example transformation captured from the planning update:
+
+- source material:
+  - cryptocurrency tracking tool
+  - 800 reports
+  - KRW 240 billion traced
+  - used by Korean National Police Agency, Kakao, Samsung Electronics
+- desired output shape:
+  - opens from a concrete operational scene
+  - reveals that the real problem was not data absence but structure
+  - lands on the result metric near the end
+  - closes with tightly scoped hashtags
 
 ## 5. Layer Boundaries
 
@@ -261,6 +301,7 @@ The remaining endpoints in this section are design targets if they are not liste
 - Tooling: ESLint, Prettier
 - Environment validation: dotenv + zod in API bootstrap
 - API integrations: direct HTTP clients for Anthropic, OpenAI Responses API, Gemini generateContent, Telegram Bot API, and Threads Graph API
+- Prompt orchestration: repository-managed system prompt template with fixed `simon-writing`-derived stage rules and optional per-admin custom prompt extension
 - UI styling: Next.js App Router with global CSS, server components, and server actions
 
 ### 8.2 Planned runtime stack
