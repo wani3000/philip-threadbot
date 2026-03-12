@@ -98,6 +98,7 @@ Current state:
 - admin-only API middleware now validates Supabase bearer tokens against an env-backed admin allowlist
 - protected cron routes now execute job runner logic with deterministic `run_key` handling
 - Telegram bot client and preview message template are now wired behind an admin test endpoint
+- Threads OAuth/publish client and integration routes are now wired for token exchange and test publishing
 - no feature endpoints are implemented yet
 
 ### 4.3 Planned support areas not yet created
@@ -186,6 +187,11 @@ After bootstrap:
 - `POST /admin/telegram/test`
   - requires bearer token and admin allowlist match
   - purpose: verify Telegram bot delivery and preview message formatting before the scheduled flow is attached
+- `GET /integrations/threads/oauth/start`
+- `GET /integrations/threads/oauth/callback`
+- `POST /integrations/threads/publish-test`
+  - publish test requires bearer token and admin allowlist match
+  - purpose: verify OAuth exchange and text-post publish flow before full persistence is attached
 - `POST /cron/generate-daily-draft`
 - `POST /cron/send-daily-telegram`
 - `POST /cron/publish-approved-posts`

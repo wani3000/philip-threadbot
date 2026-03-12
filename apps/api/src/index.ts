@@ -1,6 +1,7 @@
 import express from "express";
 import { env } from "./config/env";
 import { cronRouter } from "./routes/cron";
+import { threadsRouter } from "./routes/integrations/threads";
 import {
   AuthenticatedRequest,
   requireAdminAuth
@@ -63,6 +64,7 @@ app.post(
 );
 
 app.use("/cron", cronRouter);
+app.use("/integrations/threads", threadsRouter);
 
 app.listen(port, () => {
   console.log(`API server listening on port ${port}`);
