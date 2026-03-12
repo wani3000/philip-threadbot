@@ -133,7 +133,7 @@ Iteration:
 Todo List:
 - `[x]` `PT-10` schema design — agent: Codex
 - `[x]` `PT-11` migration bootstrap — agent: Codex
-- `[ ]` `PT-12` admin auth boundary — agent: Codex
+- `[x]` `PT-12` admin auth boundary — agent: Codex
 
 ## PT-3 AI content generation pipeline
 

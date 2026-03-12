@@ -76,6 +76,7 @@ Expected responsibilities:
 Current state:
 - only a minimal shell exists after bootstrap
 - no product UI has been implemented
+- route-level middleware now blocks future dashboard paths without a Supabase session cookie
 - no approved dashboard layout work has started
 
 ### 4.2 `apps/api`
@@ -94,6 +95,7 @@ Expected responsibilities:
 
 Current state:
 - only a minimal Express health server exists after bootstrap
+- admin-only API middleware now validates Supabase bearer tokens against an env-backed admin allowlist
 - no feature endpoints are implemented yet
 
 ### 4.3 Planned support areas not yet created
@@ -176,6 +178,9 @@ After bootstrap:
 - `GET /health`
   - returns service name and status
   - purpose: smoke-test the API package and deployment wiring
+- `GET /admin/health`
+  - requires bearer token and admin allowlist match
+  - purpose: verify the server-side auth boundary before real admin APIs are added
 
 ### 7.2 Planned endpoint families
 

@@ -10,6 +10,15 @@ const envSchema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
   API_URL: z.string().url().default("http://localhost:4000"),
   TIMEZONE: z.string().default("Asia/Seoul"),
+  ADMIN_EMAILS: z
+    .string()
+    .default("")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)
+    ),
   CRON_SECRET: z.string().min(16).default("development-cron-secret"),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),

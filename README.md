@@ -30,7 +30,8 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
   - `PT-10` `[DB] Design initial Supabase schema and migration plan`
   - `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
-- Next planned executable task: `PT-12` `[BE] Implement admin authentication boundary`
+  - `PT-12` `[BE] Implement admin authentication boundary`
+- Next planned executable task: `PT-9` `[INFRA] Establish deployment targets and cron entrypoint conventions`
 
 ## Work Status
 
@@ -41,10 +42,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - environment variable contract and API startup validation
   - first-pass database schema PRD
   - initial Supabase migration and seed files
+  - admin auth boundary scaffold for API and protected dashboard paths
 - Next executable tasks:
-  - `PT-12` admin auth boundary
   - `PT-9` deployment and cron conventions
   - `PT-15` Telegram cron flow
+  - `PT-17` Telegram bot delivery
 
 ## UI Approval Queue
 
