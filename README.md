@@ -33,7 +33,8 @@ Initial setup is now in progress. The repository started empty, so the current f
   - `PT-11` `[DB] Implement database bootstrap migrations and seed strategy`
   - `PT-12` `[BE] Implement admin authentication boundary`
   - `PT-15` `[INFRA] Implement scheduled jobs for nightly generation and morning Telegram notifications`
-- Next planned executable task: `PT-17` `[BE] Integrate draft notification Telegram bot delivery`
+  - `PT-17` `[BE] Integrate draft notification Telegram bot delivery`
+- Next planned executable task: `PT-18` `[BE] Implement Threads OAuth and publishing workflow`
 
 ## Work Status
 
@@ -47,10 +48,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - admin auth boundary scaffold for API and protected dashboard paths
   - deployment notes and protected cron endpoint scaffold
   - `job_runs`-based cron runner and idempotent run-key flow
+  - Telegram bot client, preview formatter, and protected admin test endpoint
 - Next executable tasks:
-  - `PT-17` Telegram bot delivery
   - `PT-18` Threads publishing workflow
   - `PT-13` AI provider abstraction
+  - `PT-14` draft generation pipeline
 
 ## UI Approval Queue
 

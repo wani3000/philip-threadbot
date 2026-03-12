@@ -248,7 +248,7 @@ Iteration:
 
 Todo List:
 - `[x]` `PT-15` cron jobs — agent: Codex
-- `[ ]` `PT-17` Telegram delivery — agent: Codex
+- `[x]` `PT-17` Telegram delivery — agent: Codex
 - `[ ]` `PT-18` Threads workflow — agent: Codex
 
 ## PT-5 Dashboard operations and content management

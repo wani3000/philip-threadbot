@@ -97,6 +97,7 @@ Current state:
 - only a minimal Express health server exists after bootstrap
 - admin-only API middleware now validates Supabase bearer tokens against an env-backed admin allowlist
 - protected cron routes now execute job runner logic with deterministic `run_key` handling
+- Telegram bot client and preview message template are now wired behind an admin test endpoint
 - no feature endpoints are implemented yet
 
 ### 4.3 Planned support areas not yet created
@@ -182,6 +183,9 @@ After bootstrap:
 - `GET /admin/health`
   - requires bearer token and admin allowlist match
   - purpose: verify the server-side auth boundary before real admin APIs are added
+- `POST /admin/telegram/test`
+  - requires bearer token and admin allowlist match
+  - purpose: verify Telegram bot delivery and preview message formatting before the scheduled flow is attached
 - `POST /cron/generate-daily-draft`
 - `POST /cron/send-daily-telegram`
 - `POST /cron/publish-approved-posts`

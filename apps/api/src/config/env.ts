@@ -30,7 +30,8 @@ const envSchema = z.object({
   THREADS_APP_SECRET: z.string().optional(),
   THREADS_ACCESS_TOKEN: z.string().optional(),
   THREADS_USER_ID: z.string().optional(),
-  TELEGRAM_BOT_TOKEN: z.string().optional()
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
