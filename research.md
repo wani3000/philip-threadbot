@@ -150,6 +150,7 @@ Recommended ownership model:
 - repository-managed SQL migrations
 - typed validation schemas in application code
 - optional query helper layer in the API package
+- schema reference document at `/Users/chulwan/Documents/GitHub/designer_threadbot/docs/db-schema.md`
 
 Planned core entities from the product document:
 - `philip_profiles`
@@ -159,6 +160,8 @@ Planned core entities from the product document:
   - `threads_accounts`
   - `job_runs`
   - `publish_attempts`
+
+The first-pass schema design for these tables is now documented in `docs/db-schema.md`.
 
 ## 7. API Endpoint Analysis
 
@@ -259,4 +262,3 @@ This project is starting from a blank repository, not from an existing implement
 - first non-UI server and data tasks
 
 That foundation is now being created in this repository.
-

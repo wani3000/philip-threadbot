@@ -24,9 +24,11 @@ Initial setup is now in progress. The repository started empty, so the current f
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-1` Platform foundation and repository bootstrap
-- Completed subtask: `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
-- Next planned executable task: `PT-10` `[DB] Design initial Supabase schema and migration plan`
+- Current representative task: `PT-2` Data model and authentication foundation
+- Completed subtasks:
+  - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
+  - `PT-10` `[DB] Design initial Supabase schema and migration plan`
+- Next planned executable task: `PT-8` `[INFRA] Set up environment variable strategy and example files`
 
 ## Work Status
 
@@ -34,10 +36,11 @@ Initial setup is now in progress. The repository started empty, so the current f
   - initial documentation bootstrap
   - Jira task hierarchy creation
   - monorepo workspace baseline
+  - first-pass database schema PRD
 - Next executable tasks:
-  - `PT-10` schema design
   - `PT-8` environment variable strategy
   - `PT-11` migration bootstrap
+  - `PT-12` admin auth boundary
 
 ## UI Approval Queue
 
@@ -52,6 +55,8 @@ These tasks remain locked until developer approval.
   - Detailed state-of-codebase analysis, architecture notes, layer boundaries, and gaps.
 - `plan.md`
   - Jira-mapped execution document with implementation notes, pseudocode, and todo state.
+- `docs/db-schema.md`
+  - First-pass data model, lifecycle states, indexing strategy, and operational schema notes.
 
 ## Commit Convention
 

@@ -90,8 +90,8 @@ Implementation plan:
 `PT-10`
 - Files:
   - `/Users/chulwan/Documents/GitHub/designer_threadbot/research.md`
-  - `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/migrations/*.sql`
   - `/Users/chulwan/Documents/GitHub/designer_threadbot/docs/db-schema.md`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/supabase/migrations/*.sql`
 - Pseudocode:
 ```text
 define enums for category, priority, post_status
@@ -131,7 +131,7 @@ Iteration:
 - Pending feedback.
 
 Todo List:
-- `[ ]` `PT-10` schema design — agent: Codex
+- `[x]` `PT-10` schema design — agent: Codex
 - `[ ]` `PT-11` migration bootstrap — agent: Codex
 - `[ ]` `PT-12` admin auth boundary — agent: Codex
 
@@ -354,4 +354,3 @@ Iteration:
 Todo List:
 - `[ ]` `PT-23` logging and audit — agent: Codex
 - `[ ]` `PT-24` CI and release gate — agent: Codex
-
