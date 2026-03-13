@@ -14,7 +14,9 @@ const navItems: NavItem[] = [
   { href: "/profile", label: "프로필 원재료", short: "PF" },
   { href: "/calendar", label: "콘텐츠 캘린더", short: "CL" },
   { href: "/library", label: "글 라이브러리", short: "LB" },
-  { href: "/settings/ai", label: "AI 설정", short: "AI" }
+  { href: "/settings/ai", label: "AI 설정", short: "AI" },
+  { href: "/settings/notification", label: "알림 설정", short: "NT" },
+  { href: "/settings/threads", label: "Threads 연결", short: "TH" }
 ];
 
 export async function AppShell({

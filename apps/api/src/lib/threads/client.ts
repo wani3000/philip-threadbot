@@ -162,3 +162,19 @@ export async function getThreadDetails({
 
   return parseJsonResponse(response);
 }
+
+export async function getCurrentThreadsUser(accessToken: string) {
+  const params = new URLSearchParams({
+    fields: "id,username,threads_profile_picture_url"
+  });
+
+  const response = await fetch(`${threadsApiBaseUrl}/me?${params.toString()}`, {
+    signal: AbortSignal.timeout(15_000),
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  return parseJsonResponse(response);
+}

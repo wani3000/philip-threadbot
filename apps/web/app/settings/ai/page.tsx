@@ -1,7 +1,7 @@
 import { AppShell } from "../../../components/app-shell";
 import { ErrorPanel } from "../../../components/error-panel";
 import { fetchAiSettings } from "../../../lib/api";
-import { updateAiSettingsAction } from "../../actions";
+import { updateAiGenerationSettingsAction } from "../../actions";
 
 export default async function AiSettingsPage() {
   try {
@@ -11,11 +11,11 @@ export default async function AiSettingsPage() {
       <AppShell
         pathname="/settings/ai"
         title="AI 설정"
-        description="기본 모델, 시스템 프롬프트, 텔레그램 전달 대상과 시간을 함께 관리합니다."
+        description="기본 모델과 시스템 프롬프트처럼 글 생성 품질에 직접 영향을 주는 요소를 관리합니다."
       >
         <section className="card">
           <h2 className="card-title">기본 생성 설정</h2>
-          <form action={updateAiSettingsAction} className="form-grid">
+          <form action={updateAiGenerationSettingsAction} className="form-grid">
             <div className="form-grid two">
               <div className="field">
                 <label htmlFor="defaultProvider">기본 제공자</label>
@@ -46,50 +46,18 @@ export default async function AiSettingsPage() {
                 name="customSystemPrompt"
               />
             </div>
-            <div className="form-grid two">
-              <div className="field">
-                <label htmlFor="telegramChatId">텔레그램 Chat ID</label>
-                <input
-                  defaultValue={settings.telegram_chat_id}
-                  id="telegramChatId"
-                  name="telegramChatId"
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="timezone">Timezone</label>
-                <input
-                  defaultValue={settings.timezone}
-                  id="timezone"
-                  name="timezone"
-                />
-              </div>
-            </div>
-            <div className="form-grid two">
-              <div className="field">
-                <label htmlFor="telegramSendTime">텔레그램 발송 시간</label>
-                <input
-                  defaultValue={settings.telegram_send_time.slice(0, 5)}
-                  id="telegramSendTime"
-                  name="telegramSendTime"
-                  type="time"
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="defaultPostTime">기본 게시 시간</label>
-                <input
-                  defaultValue={settings.default_post_time.slice(0, 5)}
-                  id="defaultPostTime"
-                  name="defaultPostTime"
-                  type="time"
-                />
-              </div>
-            </div>
             <div className="actions">
               <button className="button-primary" type="submit">
                 설정 저장
               </button>
             </div>
           </form>
+          <div className="card" style={{ marginTop: "1rem" }}>
+            <p className="card-copy">
+              텔레그램 발송 대상, 발송 시각, 기본 게시 시각은 알림 설정 화면에서
+              관리합니다.
+            </p>
+          </div>
         </section>
       </AppShell>
     );

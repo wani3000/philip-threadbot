@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAllowedAdminEmail } from "../lib/admin";
 import {
+  fetchAiSettings,
   createProfileMaterial,
   deleteProfileMaterial,
   generateDraft,
@@ -129,6 +130,41 @@ export async function updateAiSettingsAction(formData: FormData) {
     timezone: String(formData.get("timezone"))
   });
 
+  revalidatePath("/settings/ai");
+  revalidatePath("/");
+}
+
+export async function updateAiGenerationSettingsAction(formData: FormData) {
+  const currentSettings = await fetchAiSettings();
+
+  await updateAiSettings({
+    defaultProvider: String(formData.get("defaultProvider")),
+    defaultModel: String(formData.get("defaultModel")),
+    customSystemPrompt: String(formData.get("customSystemPrompt") || ""),
+    telegramChatId: currentSettings.telegram_chat_id,
+    telegramSendTime: currentSettings.telegram_send_time,
+    defaultPostTime: currentSettings.default_post_time,
+    timezone: currentSettings.timezone
+  });
+
+  revalidatePath("/settings/ai");
+  revalidatePath("/");
+}
+
+export async function updateNotificationSettingsAction(formData: FormData) {
+  const currentSettings = await fetchAiSettings();
+
+  await updateAiSettings({
+    defaultProvider: currentSettings.default_provider,
+    defaultModel: currentSettings.default_model,
+    customSystemPrompt: currentSettings.custom_system_prompt ?? "",
+    telegramChatId: String(formData.get("telegramChatId")),
+    telegramSendTime: String(formData.get("telegramSendTime")),
+    defaultPostTime: String(formData.get("defaultPostTime")),
+    timezone: String(formData.get("timezone"))
+  });
+
+  revalidatePath("/settings/notification");
   revalidatePath("/settings/ai");
   revalidatePath("/");
 }

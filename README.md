@@ -34,7 +34,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-30` Vercel 무료 배포 및 Google 로그인 준비
+- Current representative task: `PT-33` 운영 필수 기능 보완
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -57,6 +57,10 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-26` `[BE] Supabase 세션 기반 관리자 인증 연동`
   - `PT-27` `[FE] 로그인·로그아웃 흐름 및 보호 경로 정리`
   - `PT-28` `[DB] 원재료 카테고리 enum·마이그레이션·데모 데이터 정합성 반영`
+  - `PT-35` `[FE] 알림 설정 화면 구현`
+  - `PT-36` `[BE] Threads 연결 상태 조회 및 진단 API 구현`
+  - `PT-37` `[FE] Threads 연결 설정 화면 구현`
+  - `PT-38` `[FE] 글 라이브러리 검색·필터 구현`
 - Next planned executable task: Supabase 실프로젝트 연결 및 Google 로그인 활성화
 
 ## Work Status
@@ -76,6 +80,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - live Threads deauthorize/delete callback endpoints
   - AI provider abstraction, draft generation endpoint, and profile material CRUD APIs
   - dashboard pages for overview, profile materials, calendar, library, and AI settings
+  - dedicated notification settings page and Threads connection status page
+  - Threads status diagnostic API backed by live profile lookup
+  - library search and query-based filtering
   - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
   - structured request logging, request IDs, centralized error envelopes, and recent audit log surface
   - local demo mode that works without Supabase, AI keys, Telegram token, or Threads credentials

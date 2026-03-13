@@ -5,6 +5,7 @@ import {
   createTextThread,
   exchangeCodeForShortLivedToken,
   exchangeLongLivedToken,
+  getCurrentThreadsUser,
   getThreadsAuthorizationUrl,
   publishThread
 } from "../../lib/threads/client";
@@ -100,6 +101,69 @@ threadsRouter.get("/oauth/start", (_request, response) => {
     authorizeUrl
   });
 });
+
+threadsRouter.get(
+  "/status",
+  requireAdminAuth,
+  asyncHandler(async (_request, response) => {
+    const hasOauthConfig = Boolean(
+      env.THREADS_APP_ID && env.THREADS_APP_SECRET && env.THREADS_REDIRECT_URI
+    );
+    const hasToken = Boolean(env.THREADS_ACCESS_TOKEN);
+    const hasUserId = Boolean(env.THREADS_USER_ID);
+
+    let profile: {
+      id: string;
+      username: string;
+      threads_profile_picture_url?: string;
+    } | null = null;
+    let connectionStatus:
+      | "connected"
+      | "configuration_required"
+      | "token_missing"
+      | "error" = "configuration_required";
+    let message: string | null = null;
+    let authorizeUrl: string | null = null;
+
+    if (hasOauthConfig) {
+      authorizeUrl = getThreadsAuthorizationUrl();
+    }
+
+    if (!hasOauthConfig) {
+      message = "Threads OAuth 설정값이 아직 완성되지 않았습니다.";
+    } else if (!hasToken) {
+      connectionStatus = "token_missing";
+      message = "Threads 액세스 토큰이 없어 재연결이 필요합니다.";
+    } else {
+      try {
+        profile = await getCurrentThreadsUser(env.THREADS_ACCESS_TOKEN!);
+        connectionStatus = "connected";
+      } catch (error) {
+        connectionStatus = "error";
+        message =
+          error instanceof Error
+            ? error.message
+            : "Threads 연결 상태를 확인하지 못했습니다.";
+      }
+    }
+
+    response.json({
+      connectionStatus,
+      message,
+      oauthConfigured: hasOauthConfig,
+      accessTokenConfigured: hasToken,
+      userIdConfigured: hasUserId,
+      appId: env.THREADS_APP_ID ?? null,
+      redirectUri: env.THREADS_REDIRECT_URI ?? null,
+      configuredUserId: env.THREADS_USER_ID ?? null,
+      authorizeUrl,
+      profile,
+      profileUrl: profile?.username
+        ? `https://www.threads.com/@${profile.username}`
+        : null
+    });
+  })
+);
 
 threadsRouter.get(
   "/oauth/callback",

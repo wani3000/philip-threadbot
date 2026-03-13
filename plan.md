@@ -558,3 +558,98 @@ Iteration:
 Todo List:
 
 - `[x]` `PT-28` category schema alignment and migration safety — agent: Codex
+
+## PT-33 운영 필수 기능 보완
+
+Subtasks:
+
+- `PT-35` `[FE] 알림 설정 화면 구현` — executable now
+- `PT-36` `[BE] Threads 연결 상태 조회 및 진단 API 구현` — executable now
+- `PT-37` `[FE] Threads 연결 설정 화면 구현` — executable now
+- `PT-38` `[FE] 글 라이브러리 검색·필터 구현` — executable now
+
+Approach:
+
+- Fill the remaining admin-operability gaps from the planning document before moving to stretch UX work.
+- Reuse the existing `ai_settings` contract rather than splitting persistence too early.
+- Keep Threads diagnostics read-only and safe while still exposing enough detail for operations.
+
+Implementation plan:
+
+`PT-35`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/settings/notification/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/actions.ts`
+- Pseudocode:
+
+```text
+read current ai_settings
+render notification-only fields
+merge notification edits back into ai_settings update call
+```
+
+`PT-36`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/routes/integrations/threads.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/threads/client.ts`
+- Pseudocode:
+
+```text
+check oauth env presence
+check token/user id presence
+if token exists, call /me and return profile summary
+respond with safe diagnostic payload for admin dashboard
+```
+
+`PT-37`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/settings/threads/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/api.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/components/app-shell.tsx`
+- Pseudocode:
+
+```text
+fetch threads status server-side
+show connection summary, account info, and re-connect link
+surface any configuration or token errors
+```
+
+`PT-38`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/library/page.tsx`
+- Pseudocode:
+
+```text
+read searchParams
+filter loaded posts by keyword/status/category/model
+render filter form with query params
+show empty state when no result matches
+```
+
+Iteration:
+
+- 2026-03-13: Added `/settings/notification`, `/settings/threads`, Threads status diagnostics, and library query filtering to cover the remaining MVP admin gaps from the planning document.
+
+Todo List:
+
+- `[x]` `PT-35` notification settings screen — agent: Codex
+- `[x]` `PT-36` Threads status diagnostics API — agent: Codex
+- `[x]` `PT-37` Threads settings screen — agent: Codex
+- `[x]` `PT-38` library search and filtering — agent: Codex
+
+## PT-34 운영 확장 기능 및 분석 고도화
+
+Subtasks:
+
+- `PT-39` `[UI] 월간 캘린더 및 드래그앤드롭 일정 조정 구현` — 후순위
+- `PT-40` `[BE] Threads 인사이트 수집 및 저장 구현` — 후순위
+- `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화` — 후순위
+- `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강` — 후순위
+
+Approach:
+
+- Treat this group as post-MVP operational polish after real Supabase login and live analytics are available.

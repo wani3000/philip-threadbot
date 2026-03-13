@@ -63,6 +63,28 @@ export type AuditLogRecord = {
   created_at: string;
 };
 
+export type ThreadsStatus = {
+  connectionStatus:
+    | "connected"
+    | "configuration_required"
+    | "token_missing"
+    | "error";
+  message: string | null;
+  oauthConfigured: boolean;
+  accessTokenConfigured: boolean;
+  userIdConfigured: boolean;
+  appId: string | null;
+  redirectUri: string | null;
+  configuredUserId: string | null;
+  authorizeUrl: string | null;
+  profile: {
+    id: string;
+    username: string;
+    threads_profile_picture_url?: string;
+  } | null;
+  profileUrl: string | null;
+};
+
 type RequestOptions = RequestInit & {
   skipAuth?: boolean;
 };
@@ -136,6 +158,10 @@ export async function fetchAuditLogs(limit = 8) {
   );
 
   return payload.items;
+}
+
+export async function fetchThreadsStatus() {
+  return apiRequest<ThreadsStatus>("/integrations/threads/status");
 }
 
 export async function updateAiSettings(input: {
