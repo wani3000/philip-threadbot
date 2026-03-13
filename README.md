@@ -34,7 +34,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-33` 운영 필수 기능 보완
+- Current representative task: handoff only
+- Next assigned agent: 미정
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -61,7 +62,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-36` `[BE] Threads 연결 상태 조회 및 진단 API 구현`
   - `PT-37` `[FE] Threads 연결 설정 화면 구현`
   - `PT-38` `[FE] 글 라이브러리 검색·필터 구현`
-- Next planned executable task: Supabase 실프로젝트 연결 및 Google 로그인 활성화
+  - `PT-43` `[INFRA] Supabase·Google 실로그인 자격증명 연결 및 활성화`
+- Next planned executable task: `PT-43` Supabase·Google 실로그인 자격증명 연결 및 활성화
 
 ## Work Status
 
@@ -91,11 +93,11 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - cron runner implementation for daily draft generation, Telegram preview delivery, and scheduled Threads publish
   - Vercel cron-compatible auth support and daily UTC cron schedule config
 - Next executable tasks:
-  - Supabase 실DB 연결로 예약 발행 상태 영속화
-  - Vercel `web` 프로젝트에 Supabase 공개 환경변수 주입
-  - Supabase Google provider 설정 및 허용 관리자 이메일 검증
-  - 실운영 cron 검증
-  - 운영 모드 전환
+  - `PT-43` Supabase·Google 실로그인 자격증명 연결 및 활성화
+  - `PT-40` Threads 인사이트 수집 및 저장 구현
+  - `PT-41` 홈 성과 요약 및 원재료 차트 고도화
+  - `PT-42` 라이브러리 재사용 액션 및 확장 운영 기능 보강
+  - `PT-39` 월간 캘린더 및 드래그앤드롭 일정 조정 구현
 
 ## Deployment Status
 
@@ -111,7 +113,15 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## UI Approval Queue
 
-- None. `PT-21` and `PT-22` were approved and implemented.
+- 없음
+
+## 🔄 인계 요약 (다음 에이전트 필독)
+
+- 마지막 완료 작업: `PT-38` 글 라이브러리 검색·필터 구현
+- 다음 작업: `PT-43` Supabase·Google 실로그인 자격증명 연결 및 활성화
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. `web`은 Supabase 공개 키가 없어도 더 이상 깨지지 않고 로그인만 비활성화됩니다. Threads 상태 점검은 `/settings/threads` 또는 `/integrations/threads/status`를 사용하면 가장 빠릅니다.
+- UI 승인 대기: 없음
+- 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 
 ## Reference Files
 

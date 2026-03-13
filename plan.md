@@ -653,3 +653,69 @@ Subtasks:
 Approach:
 
 - Treat this group as post-MVP operational polish after real Supabase login and live analytics are available.
+
+Iteration:
+
+- 2026-03-13 handoff: keep this task group in `To Do`. Recommended execution order is `PT-40` -> `PT-41` -> `PT-42` -> `PT-39` so metrics/data shape lands before dashboard polish and the calendar UI comes last.
+
+Todo List:
+
+- `[ ]` `PT-39` monthly calendar and drag-and-drop rescheduling — next agent
+- `[ ]` `PT-40` Threads insights ingestion and storage — next agent
+- `[ ]` `PT-41` home analytics summary and material charts — next agent
+- `[ ]` `PT-42` library reuse actions and extended operations tools — next agent
+
+## PT-30 Vercel 무료 배포 및 Google 로그인 준비
+
+Subtasks:
+
+- `PT-31` `[FE] Google OAuth 로그인 버튼·콜백 흐름 추가` — done
+- `PT-32` `[INFRA] Vercel 무료 배포 구성 및 도메인 연결` — done
+- `PT-43` `[INFRA] Supabase·Google 실로그인 자격증명 연결 및 활성화` — pending
+
+Approach:
+
+- The deployment and login code paths are already in place.
+- Remaining work is now almost entirely credential wiring and environment validation.
+
+Iteration:
+
+- 2026-03-13 handoff:
+  - Completed: GitHub -> Vercel auto deployment, Google OAuth UI/callback code, safe login fallback when Supabase env is missing.
+  - Pending: attach live Supabase URL/anon key, configure Google provider in Supabase, verify allowed admin email, and test `/login` end-to-end in production.
+  - Current blocker is external credentials rather than application code.
+  - Next agent should start with `PT-43` before any PT-34 expansion work if real login is a priority.
+  - UI 승인 대기 이슈 목록: 없음
+
+Todo List:
+
+- `[x]` `PT-31` Google OAuth button and callback flow — agent: Codex
+- `[x]` `PT-32` Vercel deployment configuration and domains — agent: Codex
+- `[ ]` `PT-43` Supabase and Google live credential activation — next agent
+
+## Handoff Note
+
+Iteration:
+
+- 내가 완료한 작업 요약:
+  - `PT-35` 알림 설정 전용 화면 추가
+  - `PT-36` Threads 연결 상태 진단 API 추가
+  - `PT-37` Threads 연결 설정 화면 추가
+  - `PT-38` 라이브러리 검색·필터 추가
+- 미완료 작업 및 현재 상태:
+  - `PT-43`은 아직 시작하지 않았고 `To Do` 상태입니다. 코드 준비는 끝났고 외부 자격증명 주입만 남았습니다.
+  - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
+- 작업 중 발견한 이슈나 주의사항:
+  - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
+  - Threads 진단은 `/integrations/threads/status`와 `/settings/threads`에서 가장 빠르게 확인할 수 있습니다.
+  - GitHub push -> Vercel 자동 배포는 현재 정상입니다.
+- 다음으로 처리해야 할 하위 태스크 번호 및 순서:
+  - `PT-43`
+  - `PT-40`
+  - `PT-41`
+  - `PT-42`
+  - `PT-39`
+- 막히거나 판단이 필요한 부분:
+  - 실로그인을 먼저 열지, 분석/확장 기능부터 갈지는 우선순위 선택 문제입니다. 운영 전환이 목적이면 `PT-43`이 최우선입니다.
+- UI 승인 대기 중인 이슈 목록:
+  - 없음

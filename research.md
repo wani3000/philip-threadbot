@@ -84,7 +84,9 @@ Current state:
 
 - only a minimal shell exists after bootstrap
 - route-level middleware now blocks future dashboard paths without a Supabase session cookie
-- approved dashboard UI is now implemented for overview, profile, calendar, library, and AI settings
+- approved dashboard UI is now implemented for overview, profile, calendar, library, AI settings, notification settings, and Threads settings
+- library now supports server-rendered query filtering by keyword, status, category, and model
+- login/auth pages now degrade safely when Supabase public keys are not configured, instead of failing during render
 
 ### 4.2 `apps/api`
 
@@ -116,6 +118,7 @@ Current state:
 - audit events can now be stored in Supabase or in a local in-memory store for demo mode
 - the API now has a demo-mode runtime path that works without Supabase, AI provider keys, Telegram token, or Threads credentials
 - the web app now supports Supabase session login, logout, middleware-based session refresh, and server-side token forwarding to the API
+- the Threads integration module now exposes a diagnostic status endpoint that verifies env presence and can read the current Threads profile from the live token
 
 ### 4.3 Planned support areas not yet created
 
@@ -124,6 +127,26 @@ Current state:
 - Telegram message formatting module
 - AI provider client modules
 - Threads API integration modules
+
+### 4.6 Threads operations diagnostics
+
+The Threads integration is no longer limited to OAuth exchange and publish-test routes.
+
+New behavior:
+
+- `GET /integrations/threads/status` returns:
+  - OAuth configuration presence
+  - access token presence
+  - configured Threads user id
+  - generated authorize URL when available
+  - live profile summary from `GET /me` when the stored token is valid
+- the admin dashboard now exposes this information at `/settings/threads`
+- this route is intentionally read-only and safe to call even when credentials are missing
+
+Important technical fact:
+
+- Threads profile lookup currently uses `fields=id,username,threads_profile_picture_url`
+- the status route is the quickest way for the next agent to confirm whether a deployment has the correct Threads env attached before attempting publishing or insights work
 
 ### 4.4 Draft prompt design contract
 
@@ -200,6 +223,7 @@ Current compromise:
 
 - the web app now prefers Supabase session access tokens for server components and server actions
 - local demo mode still falls back to `ADMIN_BEARER_TOKEN` so credential-free review remains possible
+- when Supabase public env keys are missing, protected routes redirect to `/login` with a clear configuration message instead of throwing render-time errors
 
 ### 5.2 Server and business layer
 
@@ -301,9 +325,10 @@ After bootstrap:
   - purpose: drive the AI settings screen and future regeneration controls
 - `GET /integrations/threads/oauth/start`
 - `GET /integrations/threads/oauth/callback`
+- `GET /integrations/threads/status`
 - `POST /integrations/threads/publish-test`
   - publish test requires bearer token and admin allowlist match
-  - purpose: verify OAuth exchange and text-post publish flow before full persistence is attached
+  - purpose: verify OAuth exchange, live connection status, and text-post publish flow before full persistence is attached
 - `POST /cron/generate-daily-draft`
 - `POST /cron/send-daily-telegram`
 - `POST /cron/publish-approved-posts`
@@ -374,8 +399,10 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ### 9.1 Immediate gaps
 
-- Threads live integration still depends on missing production credentials and real OAuth validation.
-- Browser-bound Supabase session auth is still not implemented; the dashboard uses a bootstrap machine token bridge.
+- Supabase real-project credentials and Google provider secrets are still not attached in production, so live admin login is not activated yet.
+- Threads publishing works, but insights collection and storage are still not implemented.
+- Calendar remains a grouped-list view rather than the planned monthly drag-and-drop scheduler.
+- Library reuse actions and richer home analytics are still missing.
 - Automated tests beyond format/lint/typecheck/build do not exist yet.
 
 ### 9.2 Product-level risks carried from the planning document
@@ -396,4 +423,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, and launch-readiness scaffolding. The next meaningful milestone is no longer bootstrap; it is real-environment validation of Telegram and Threads integrations.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, and the missing core operations screens from the planning document. The next meaningful milestone is no longer bootstrap; it is real-environment activation of Supabase/Google login and then the PT-34 expansion track for analytics, monthly scheduling, and library reuse.
