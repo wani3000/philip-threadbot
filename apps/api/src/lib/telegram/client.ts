@@ -10,11 +10,14 @@ export async function sendTelegramMessage({
   text,
   chatId
 }: SendTelegramMessageInput) {
-  if (isDemoModeEnabled()) {
+  const resolvedChatId = chatId ?? env.TELEGRAM_CHAT_ID;
+  const canSendLiveMessage = Boolean(env.TELEGRAM_BOT_TOKEN && resolvedChatId);
+
+  if (isDemoModeEnabled() && !canSendLiveMessage) {
     return {
       ok: true,
       result: {
-        chat_id: chatId ?? env.TELEGRAM_CHAT_ID ?? "demo-chat",
+        chat_id: resolvedChatId ?? "demo-chat",
         text,
         simulated: true
       }
@@ -24,8 +27,6 @@ export async function sendTelegramMessage({
   if (!env.TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not configured.");
   }
-
-  const resolvedChatId = chatId ?? env.TELEGRAM_CHAT_ID;
 
   if (!resolvedChatId) {
     throw new Error("Telegram delivery requires a chat id.");
