@@ -23,19 +23,19 @@ const envSchema = z.object({
     ),
   ADMIN_BEARER_TOKEN: z.string().default("local-dev-admin-token"),
   CRON_SECRET: z.string().min(16).default("development-cron-secret"),
-  SUPABASE_URL: z.string().url().optional(),
-  SUPABASE_ANON_KEY: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
-  GEMINI_API_KEY: z.string().optional(),
-  THREADS_APP_ID: z.string().optional(),
-  THREADS_APP_SECRET: z.string().optional(),
-  THREADS_ACCESS_TOKEN: z.string().optional(),
-  THREADS_USER_ID: z.string().optional(),
-  THREADS_REDIRECT_URI: z.string().url().optional(),
-  TELEGRAM_BOT_TOKEN: z.string().optional(),
-  TELEGRAM_CHAT_ID: z.string().optional()
+  SUPABASE_URL: z.string().trim().url().optional(),
+  SUPABASE_ANON_KEY: z.string().trim().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().trim().optional(),
+  ANTHROPIC_API_KEY: z.string().trim().optional(),
+  OPENAI_API_KEY: z.string().trim().optional(),
+  GEMINI_API_KEY: z.string().trim().optional(),
+  THREADS_APP_ID: z.string().trim().optional(),
+  THREADS_APP_SECRET: z.string().trim().optional(),
+  THREADS_ACCESS_TOKEN: z.string().trim().optional(),
+  THREADS_USER_ID: z.string().trim().optional(),
+  THREADS_REDIRECT_URI: z.string().trim().url().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().trim().optional(),
+  TELEGRAM_CHAT_ID: z.string().trim().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
