@@ -690,18 +690,17 @@ Iteration:
   - Next agent should start with `PT-45` and `PT-43` before any PT-34 expansion work if real launch is the priority.
   - UI 승인 대기 이슈 목록: 없음
 - 2026-03-13 final readiness review:
-  - Production API `GET /health` still reports `mode: demo`.
-  - Vercel API env is missing `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and all LLM provider keys.
-  - Vercel web env is missing `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-  - Real launch is blocked by deployment environment wiring, not by missing product screens.
+  - Production API `GET /health` now reports `mode: live`.
+  - Vercel API and web Supabase env wiring is complete, and the new Supabase project migrations are applied.
+  - The remaining blockers are one real Google sign-in verification and insufficient Anthropic credits for live draft generation.
 
 Todo List:
 
 - `[x]` `PT-31` Google OAuth button and callback flow — agent: Codex
 - `[x]` `PT-32` Vercel deployment configuration and domains — agent: Codex
-- `[ ]` `PT-43` Supabase and Google live credential activation — next agent
-- `[ ]` `PT-45` API live Supabase connection and demo-mode exit — next agent
-- `[ ]` `PT-46` LLM provider key hookup and live draft verification — next agent
+- `[ ]` `PT-43` Supabase and Google live credential activation — agent: Codex, pending final human sign-in verification
+- `[x]` `PT-45` API live Supabase connection and demo-mode exit — agent: Codex
+- `[ ]` `PT-46` LLM provider key hookup and live draft verification — agent: Codex, blocked by Anthropic credit balance
 - `[ ]` `PT-47` production cron, Telegram, and Threads end-to-end verification — next agent
 
 ## PT-44 운영 시작 전환 마감
@@ -744,6 +743,83 @@ Todo List:
 
 - `[x]` `PT-48` readiness diagnostics API and dashboard visibility — agent: Codex
 
+## PT-49 기획 문서 재검증 후 운영 보완
+
+Subtasks:
+
+- `PT-50` `[BE] 초기 설정 미존재 시 기본 AI 설정 자동 생성` — executable now
+- `PT-51` `[DB] 필립 원재료 30+건 적재용 구조화 시드 준비` — executable now
+- `PT-52` `[INFRA] Google 실제 로그인 및 운영 전환 최종 체크리스트 검증` — pending
+
+Approach:
+
+- Re-read both source planning documents and compare them against the live implementation rather than the earlier bootstrap assumptions.
+- Close operational gaps that would cause first-run failures even when the codebase itself is otherwise feature-complete.
+- Treat structured source-material loading as launch preparation, not optional sample data.
+
+Implementation plan:
+
+`PT-50`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/ai-settings/defaults.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/routes/ai-settings.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/store.ts`
+- Pseudocode:
+
+```text
+build repository-owned default ai_settings payload
+when GET /ai-settings finds no row, insert defaults and return it
+when draft pipeline needs ai_settings and table is empty, auto-create defaults
+```
+
+`PT-51`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/docs/philip-content-seed.json`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/scripts/import-philip-content.mjs`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/package.json`
+- Pseudocode:
+
+```text
+convert philip_content_database.docx into structured JSON rows
+preserve the fixed six category taxonomy from the product plan
+query existing titles in Supabase
+insert only missing rows and report inserted/skipped counts
+```
+
+`PT-52`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/README.md`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/research.md`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/plan.md`
+- Pseudocode:
+
+```text
+verify Google sign-in with the real admin account
+confirm readiness panel reflects live infra accurately
+run final cron and Threads validation after LLM credits are available
+record final launch blockers in docs and Jira
+```
+
+Iteration:
+
+- 2026-03-13:
+  - Re-read `philip_threads_system_plan.docx` and `philip_content_database.docx`.
+  - Identified two launch-critical gaps not covered by the earlier implementation pass:
+    - empty `ai_settings` caused first-run friction in live Supabase
+    - the full Philip content library from the planning database had not been structured or importable yet
+  - Added auto-bootstrap for `ai_settings` and a structured JSON + import script for production source materials.
+  - Applied the new Supabase project migrations and imported 49 total source-material rows, with the bulk import script inserting 43 additional unique rows after skipping 2 title overlaps.
+  - Live draft generation now reaches Anthropic successfully, so the remaining PT-46 blocker is account credit balance rather than code integration.
+
+Todo List:
+
+- `[x]` `PT-50` default AI settings auto-bootstrap — agent: Codex
+- `[x]` `PT-51` structured Philip content seed and import tooling — agent: Codex
+- `[ ]` `PT-52` Google live sign-in and final launch checklist verification — next agent
+
 ## Handoff Note
 
 Iteration:
@@ -754,17 +830,24 @@ Iteration:
   - `PT-37` Threads 연결 설정 화면 추가
   - `PT-38` 라이브러리 검색·필터 추가
   - `PT-48` 운영 준비 상태 진단 API 및 홈 표시 추가
+  - `PT-45` Supabase 실DB 연결 및 production live mode 전환
+  - `PT-50` 기본 AI 설정 자동 생성 경로 추가
+  - `PT-51` 필립 원재료 49건 적재용 구조화 시드/임포트 경로 준비
 - 미완료 작업 및 현재 상태:
-  - `PT-45`, `PT-43`, `PT-46`, `PT-47`은 모두 `To Do` 상태입니다.
-  - 이 네 개가 해결되기 전에는 운영 시작이 불가합니다.
+  - `PT-43`은 Google provider와 관리자 allowlist까지 연결됐고, 실제 관리자 계정 1회 로그인 검증만 남았습니다.
+  - `PT-46`은 Anthropic API까지 도달하지만 현재 계정의 크레딧 부족으로 실초안 생성이 실패합니다.
+  - `PT-47`은 위 두 항목이 풀린 뒤 최종 cron/Telegram/Threads end-to-end 검증만 남았습니다.
+  - `PT-52`는 운영 전환 최종 체크리스트 묶음으로 남아 있습니다.
   - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
 - 작업 중 발견한 이슈나 주의사항:
   - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
   - Threads 진단은 `/integrations/threads/status`와 `/settings/threads`에서 가장 빠르게 확인할 수 있습니다.
   - 운영 전환 전체 상태는 홈의 운영 준비 상태 카드와 `/admin/readiness`에서 가장 빠르게 확인할 수 있습니다.
   - GitHub push -> Vercel 자동 배포는 현재 정상입니다.
+  - `ai_settings` 테이블이 비어 있어도 이제 API가 기본 설정을 자동 생성합니다.
+  - 새 Supabase 프로젝트에는 Philip 원재료가 총 49건 적재되어 있습니다.
 - 다음으로 처리해야 할 하위 태스크 번호 및 순서:
-  - `PT-45`
+  - `PT-52`
   - `PT-43`
   - `PT-46`
   - `PT-47`
@@ -773,6 +856,7 @@ Iteration:
   - `PT-42`
   - `PT-39`
 - 막히거나 판단이 필요한 부분:
-  - 운영 전환이 목적이면 PT-34 확장 작업보다 `PT-45 -> PT-43 -> PT-46 -> PT-47` 순서가 최우선입니다.
+  - 운영 전환이 목적이면 PT-34 확장 작업보다 `PT-52 -> PT-43 -> PT-46 -> PT-47` 순서가 최우선입니다.
+  - `PT-46`은 코드 수정이 아니라 Anthropic 과금 또는 대체 LLM 키 준비가 먼저입니다.
 - UI 승인 대기 중인 이슈 목록:
   - 없음

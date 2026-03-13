@@ -4,7 +4,7 @@ Philip Threadbot is an admin-operated automation system that turns Philip Design
 
 ## Current Context
 
-Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, pre-launch quality gates, GitHub-to-Vercel automatic deployment for both `web` and `api`, and an operations-readiness panel that shows what is still blocking live launch.
+Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, pre-launch quality gates, GitHub-to-Vercel automatic deployment for both `web` and `api`, a live Supabase-backed production path, and an operations-readiness panel that shows what is still blocking final launch.
 
 ## Core Directory Structure
 
@@ -34,7 +34,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: 운영 시작 검토 및 마감
+- Current representative task: 기획 문서 재검증 후 운영 보완
 - Next assigned agent: 미정
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
@@ -63,7 +63,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-37` `[FE] Threads 연결 설정 화면 구현`
   - `PT-38` `[FE] 글 라이브러리 검색·필터 구현`
   - `PT-48` `[BE] 운영 준비 상태 진단 API 및 홈 표시 구현`
-- Next planned executable task: `PT-45` API Supabase 실DB 연결 및 demo mode 해제
+  - `PT-45` `[INFRA] API Supabase 실DB 연결 및 demo mode 해제`
+- Next planned executable task: `PT-52` Google 실제 로그인 및 운영 전환 최종 체크리스트 검증
 
 ## Work Status
 
@@ -88,14 +89,16 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - library search and query-based filtering
   - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
   - structured request logging, request IDs, centralized error envelopes, and recent audit log surface
+  - first-run default `ai_settings` auto-bootstrap when the table is empty
+  - structured Philip content seed JSON plus bulk import script for 30+ production-ready source materials
   - local demo mode that works without Supabase, AI keys, Telegram token, or Threads credentials
   - GitHub Actions CI and release checklist docs
   - Supabase 세션 기반 로그인 페이지, 로그아웃 액션, 미들웨어 세션 갱신, 서버 액션 토큰 전달 연동
   - cron runner implementation for daily draft generation, Telegram preview delivery, and scheduled Threads publish
   - Vercel cron-compatible auth support and daily UTC cron schedule config
+  - live Supabase migration application and production database seeding with 49 source-material rows
 - Next executable tasks:
-  - `PT-45` API Supabase 실DB 연결 및 demo mode 해제
-  - `PT-43` Supabase·Google 실로그인 자격증명 연결 및 활성화
+  - `PT-52` Google 실제 로그인 및 운영 전환 최종 체크리스트 검증
   - `PT-46` LLM provider 키 연결 및 실초안 생성 검증
   - `PT-47` 실운영 cron·텔레그램·Threads end-to-end 검증
   - `PT-40` Threads 인사이트 수집 및 저장 구현
@@ -111,16 +114,12 @@ Initial setup and the MVP admin surface are now in place. The repository started
 - Web: [https://philip-threadbot-web.vercel.app](https://philip-threadbot-web.vercel.app)
 - API: [https://philip-threadbot-api.vercel.app](https://philip-threadbot-api.vercel.app)
 - Current remaining external dependency for real login:
-  - `SUPABASE_URL`
-  - `SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - Google OAuth provider setup in Supabase
-  - at least one LLM provider key for live draft generation
+  - sufficient Anthropic credits or another live LLM provider key with available quota
 - Current production blocker summary:
-  - API is still running in `demo` mode because live Supabase env is not attached
-  - live draft generation is blocked until an LLM provider key is attached
+  - API production is already running in `live` mode with Supabase attached
+  - live draft generation reaches Anthropic successfully but fails because the current Anthropic account has insufficient credits
+  - Google sign-in code and provider setup are in place, but one real admin login verification is still pending
 
 ## UI Approval Queue
 
@@ -128,9 +127,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
-- 마지막 완료 작업: `PT-48` 운영 준비 상태 진단 API 및 홈 표시 구현
-- 다음 작업: `PT-45` API Supabase 실DB 연결 및 demo mode 해제
-- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 불가 사유는 기능 부족보다 배포 환경 미연결입니다. 홈 대시보드의 운영 준비 상태 카드와 `/admin/readiness`가 현재 블로커를 가장 정확하게 보여줍니다.
+- 마지막 완료 작업: `PT-45` API Supabase 실DB 연결 및 demo mode 해제
+- 다음 작업: `PT-52` Google 실제 로그인 및 운영 전환 최종 체크리스트 검증
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 불가 사유는 기능 부족보다 Anthropic 과금 부족과 Google 실로그인 미검증입니다. 홈 대시보드의 운영 준비 상태 카드와 `/admin/readiness`가 현재 블로커를 가장 정확하게 보여줍니다.
 - UI 승인 대기: 없음
 - 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 
@@ -158,7 +157,9 @@ The web dashboard now supports Supabase session login and forwards the session a
 - If `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are configured, Telegram delivery can be validated with real messages even while the rest of the stack stays in demo mode.
 - Live mode에서는 `/login`에서 Supabase 관리자 계정으로 로그인하면 같은 세션으로 대시보드와 API가 연결됩니다.
 - 프로필 원재료의 기준 카테고리는 `경력`, `프로젝트`, `창업스토리`, `강의멘토링`, `디자이너인사이트`, `바이브코딩` 여섯 가지로 고정되어 있습니다.
-- Threads 자격증명은 연결되었고 실제 게시 검증도 끝났습니다. 현재 남은 운영 전환 항목은 Supabase 실연결, Google 로그인 활성화, LLM 키 연결입니다.
+- Threads 자격증명은 연결되었고 실제 게시 검증도 끝났습니다.
+- Supabase production 연결과 실DB 마이그레이션도 완료되었습니다.
+- 현재 남은 운영 전환 항목은 Google 실로그인 1회 검증, Anthropic 크레딧 충전 또는 대체 LLM 키 연결, 그리고 cron end-to-end 최종 확인입니다.
 
 ## Commit Convention
 

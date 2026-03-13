@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "../supabase";
+import { buildDefaultAiSettingsPayload } from "../ai-settings/defaults";
 import {
   createDemoGeneratedDraft,
   getDemoAiSettings,
@@ -57,6 +58,22 @@ export async function getDefaultAiSettings() {
 
   if (error) {
     throw error;
+  }
+
+  if (!data) {
+    const { data: created, error: createError } = await supabase
+      .from("ai_settings")
+      .insert(buildDefaultAiSettingsPayload())
+      .select(
+        "id, default_provider, default_model, custom_system_prompt, tone_settings, default_post_time, timezone"
+      )
+      .single<AiSettingsRecord>();
+
+    if (createError) {
+      throw createError;
+    }
+
+    return created;
   }
 
   return data;

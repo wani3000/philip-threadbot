@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { recordAuditEvent } from "../lib/audit";
+import { buildDefaultAiSettingsPayload } from "../lib/ai-settings/defaults";
 import { upsertDemoAiSettings, getDemoAiSettings } from "../lib/demo-store";
 import { asyncHandler } from "../lib/http/async-handler";
 import { createSupabaseAdminClient } from "../lib/supabase";
@@ -40,6 +41,21 @@ aiSettingsRouter.get(
 
     if (error) {
       throw error;
+    }
+
+    if (!data) {
+      const { data: created, error: createError } = await supabase
+        .from("ai_settings")
+        .insert(buildDefaultAiSettingsPayload())
+        .select("*")
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+
+      response.json(created);
+      return;
     }
 
     response.json(data);

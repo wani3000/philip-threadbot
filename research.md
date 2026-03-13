@@ -121,6 +121,9 @@ Current state:
 - the Threads integration module now exposes a diagnostic status endpoint that verifies env presence and can read the current Threads profile from the live token
 - the API now exposes `/admin/readiness`, which aggregates live launch blockers across mode, Supabase, LLM, cron, Telegram, and Threads
 - the dashboard home screen now renders the readiness payload together with a web-side Supabase public env check so launch blockers are visible without opening Vercel
+- live Supabase production wiring is now attached, the production API reports `mode: live`, and the new Supabase project has been migrated successfully
+- the API now auto-creates a default `ai_settings` row when the table is empty so first-run draft generation no longer depends on manual settings seeding
+- Philip's content database has now been converted into a repository-managed JSON seed plus a bulk import script, and the production Supabase project contains 49 source-material rows across the six fixed categories
 
 ### 4.3 Planned support areas not yet created
 
@@ -423,11 +426,9 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ### 9.1 Immediate gaps
 
-- Production API still reports `mode: demo`, so scheduled publishing is not yet running on the real persistence path.
-- Vercel API env currently lacks `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
-- Vercel web env currently lacks `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- No LLM provider key is attached in production, so live draft generation cannot succeed yet.
-- Supabase real-project credentials and Google provider secrets are still not attached in production, so live admin login is not activated yet.
+- Production API now reports `mode: live`, so persistence is running on the real Supabase path.
+- Live draft generation reaches Anthropic successfully, but the current Anthropic account cannot complete requests because its credit balance is too low.
+- Google provider wiring is in place, but one real admin sign-in verification is still required before calling launch complete.
 - Threads publishing works, but insights collection and storage are still not implemented.
 - Calendar remains a grouped-list view rather than the planned monthly drag-and-drop scheduler.
 - Library reuse actions and richer home analytics are still missing.
@@ -451,4 +452,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, and the missing core operations screens from the planning document. The next meaningful milestone is no longer bootstrap; it is the operational cutover sequence: `PT-45` API live-mode activation, `PT-43` web/Supabase Google login activation, `PT-46` LLM key hookup, and `PT-47` end-to-end cron verification. Only after that should PT-34 analytics and scheduling expansion become the focus.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Threads publishing, and structured Philip source-material seeding. The next meaningful milestone is now the last-mile launch sequence: `PT-52` final Google sign-in verification, `PT-46` resolving Anthropic billing or switching providers, and `PT-47` end-to-end cron verification. Only after that should PT-34 analytics and scheduling expansion become the focus.
