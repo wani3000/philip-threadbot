@@ -24,6 +24,23 @@ app.use(attachRequestContext);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get("/", (_request, response) => {
+  response.json({
+    service: "philip-threadbot-api",
+    status: "ok",
+    environment: env.NODE_ENV,
+    mode: isDemoModeEnabled() ? "demo" : "live",
+    routes: {
+      health: "/health",
+      adminHealth: "/admin/health",
+      generateDraftCron: "/cron/generate-daily-draft",
+      sendTelegramCron: "/cron/send-daily-telegram",
+      publishCron: "/cron/publish-approved-posts",
+      threadsOauthStart: "/integrations/threads/oauth/start"
+    }
+  });
+});
+
 app.get("/health", (_request, response) => {
   response.json({
     service: "philip-threadbot-api",
