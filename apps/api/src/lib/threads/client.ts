@@ -57,6 +57,7 @@ export async function exchangeCodeForShortLivedToken(code: string) {
   });
 
   const response = await fetch(`${threadsApiBaseUrl}/oauth/access_token`, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -80,6 +81,7 @@ export async function exchangeLongLivedToken(shortLivedToken: string) {
   const response = await fetch(
     `${threadsApiBaseUrl}/access_token?${params.toString()}`,
     {
+      signal: AbortSignal.timeout(15_000),
       method: "GET",
       headers: {
         Authorization: `Bearer ${shortLivedToken}`
@@ -100,6 +102,7 @@ export async function createTextThread({
   });
 
   const response = await fetch(`${threadsApiBaseUrl}/me/threads`, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -123,6 +126,7 @@ export async function publishThread({
   });
 
   const response = await fetch(`${threadsApiBaseUrl}/me/threads_publish`, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -130,6 +134,31 @@ export async function publishThread({
     },
     body: params.toString()
   });
+
+  return parseJsonResponse(response);
+}
+
+export async function getThreadDetails({
+  accessToken,
+  threadId
+}: {
+  accessToken: string;
+  threadId: string;
+}) {
+  const params = new URLSearchParams({
+    fields: "id,permalink,shortcode,text,timestamp,username"
+  });
+
+  const response = await fetch(
+    `${threadsApiBaseUrl}/${threadId}?${params.toString()}`,
+    {
+      signal: AbortSignal.timeout(15_000),
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
 
   return parseJsonResponse(response);
 }

@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/cron/generate-daily-draft",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/cron/send-daily-telegram",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/cron/publish-approved-posts",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

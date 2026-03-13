@@ -1,5 +1,9 @@
 import { createSupabaseAdminClient } from "../supabase";
-import { createOrRestartDemoJobRun, getDemoJobRunByKey } from "../demo-store";
+import {
+  createOrRestartDemoJobRun,
+  getDemoJobRunByKey,
+  markDemoJobRunFailed
+} from "../demo-store";
 import { isDemoModeEnabled } from "../runtime";
 import { JobType } from "./types";
 
@@ -80,4 +84,25 @@ export async function createOrRestartJobRun(jobType: JobType, runKey: string) {
     runKey,
     status: "started" as const
   };
+}
+
+export async function markJobRunFailed(runKey: string, errorMessage: string) {
+  if (isDemoModeEnabled()) {
+    markDemoJobRunFailed(runKey, errorMessage);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("job_runs")
+    .update({
+      status: "failed",
+      finished_at: new Date().toISOString(),
+      error_message: errorMessage
+    })
+    .eq("run_key", runKey);
+
+  if (error) {
+    throw error;
+  }
 }

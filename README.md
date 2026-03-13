@@ -73,6 +73,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `job_runs`-based cron runner and idempotent run-key flow
   - Telegram bot client, preview formatter, and protected admin test endpoint
   - Threads OAuth/publish client and integration test routes
+  - live Threads deauthorize/delete callback endpoints
   - AI provider abstraction, draft generation endpoint, and profile material CRUD APIs
   - dashboard pages for overview, profile materials, calendar, library, and AI settings
   - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
@@ -80,10 +81,12 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - local demo mode that works without Supabase, AI keys, Telegram token, or Threads credentials
   - GitHub Actions CI and release checklist docs
   - Supabase 세션 기반 로그인 페이지, 로그아웃 액션, 미들웨어 세션 갱신, 서버 액션 토큰 전달 연동
+  - cron runner implementation for daily draft generation, Telegram preview delivery, and scheduled Threads publish
+  - Vercel cron-compatible auth support and daily UTC cron schedule config
 - Next executable tasks:
-  - Threads 실계정 OAuth 검증
-  - 실운영 Telegram/Threads 토큰 주입
-  - Threads 테스트 게시와 운영 스케줄 실검증
+  - Supabase 실DB 연결로 예약 발행 상태 영속화
+  - 실운영 cron 검증
+  - 운영 모드 전환
 
 ## UI Approval Queue
 

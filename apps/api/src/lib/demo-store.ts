@@ -438,6 +438,47 @@ export function updateDemoPost(
   return post;
 }
 
+export function listDemoDueScheduledPosts(cutoffIso: string) {
+  return state.posts.filter(
+    (post) =>
+      post.status === "scheduled" &&
+      post.publish_status === "pending" &&
+      Boolean(post.scheduled_at) &&
+      (post.scheduled_at ?? "") <= cutoffIso
+  );
+}
+
+export function markDemoPostPublished(input: {
+  id: string;
+  threadId: string;
+  threadPermalink: string | null;
+  publishedAt: string;
+}) {
+  const post = getDemoPost(input.id);
+  post.status = "published";
+  post.publish_status = "published";
+  post.thread_id = input.threadId;
+  post.thread_permalink = input.threadPermalink;
+  post.published_at = input.publishedAt;
+  post.updated_at = nowIso();
+  return post;
+}
+
+export function markDemoPostFailed(input: {
+  id: string;
+  errorMessage: string;
+}) {
+  const post = getDemoPost(input.id);
+  post.status = "failed";
+  post.publish_status = "failed";
+  post.generation_notes = {
+    ...post.generation_notes,
+    publishError: input.errorMessage
+  };
+  post.updated_at = nowIso();
+  return post;
+}
+
 export function getDemoJobRunByKey(runKey: string) {
   return state.jobRuns.find((entry) => entry.run_key === runKey) ?? null;
 }
@@ -490,6 +531,18 @@ export function markDemoJobRunSucceeded(runKey: string) {
   }
 
   run.status = "succeeded";
+  run.finished_at = nowIso();
+}
+
+export function markDemoJobRunFailed(runKey: string, errorMessage: string) {
+  const run = getDemoJobRunByKey(runKey);
+
+  if (!run) {
+    throw new Error("작업 실행 기록을 찾을 수 없습니다.");
+  }
+
+  run.status = "failed";
+  run.error_message = errorMessage;
   run.finished_at = nowIso();
 }
 

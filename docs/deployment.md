@@ -6,7 +6,7 @@
   - deploy to Vercel
   - responsibility: admin dashboard shell and future authenticated dashboard routes
 - `apps/api`
-  - deploy to Railway
+  - deploy to Vercel
   - responsibility: business logic, cron entrypoints, Threads integration, Telegram delivery, protected admin APIs, and operational logging
 
 ## 2. Environment Ownership
@@ -38,8 +38,11 @@
 
 All cron endpoints live under `/cron/*` and require:
 
-- HTTP method: `POST`
-- header: `x-cron-secret`
+- Vercel cron method: `GET`
+- manual fallback method: `POST`
+- auth header:
+  - Vercel cron: `Authorization: Bearer <CRON_SECRET>`
+  - manual fallback: `x-cron-secret: <CRON_SECRET>`
 - secret source: `CRON_SECRET`
 
 Current placeholders:
@@ -49,6 +52,12 @@ Current placeholders:
 - `POST /cron/publish-approved-posts`
 
 These routes are now live entrypoints and return job-run acceptance payloads backed by `job_runs` state.
+
+Current `apps/api/vercel.json` schedule in UTC:
+
+- `0 15 * * *` → KST `00:00` draft generation
+- `0 22 * * *` → KST `07:00` Telegram preview
+- `0 0 * * *` → KST `09:00` Threads publish
 
 ## 4. Execution Order
 

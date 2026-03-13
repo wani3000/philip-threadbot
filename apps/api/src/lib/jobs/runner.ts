@@ -1,11 +1,40 @@
 import { env } from "../../config/env";
 import { createSupabaseAdminClient, hasSupabaseAuthConfig } from "../supabase";
-import { markDemoJobRunSucceeded } from "../demo-store";
+import {
+  getDemoAiSettings,
+  listDemoDueScheduledPosts,
+  listDemoPosts,
+  markDemoJobRunSucceeded,
+  markDemoPostFailed,
+  markDemoPostPublished
+} from "../demo-store";
 import { logger } from "../logger";
 import { isDemoModeEnabled } from "../runtime";
 import { recordAuditEvent } from "../audit";
-import { createOrRestartJobRun } from "./store";
+import { generateDraftFromProfile } from "../draft-pipeline";
+import { getDefaultAiSettings } from "../draft-pipeline/store";
+import { sendTelegramMessage } from "../telegram/client";
+import { renderDraftPreviewMessage } from "../telegram/templates";
+import {
+  createTextThread,
+  getThreadDetails,
+  publishThread
+} from "../threads/client";
+import { createOrRestartJobRun, markJobRunFailed } from "./store";
 import { JobExecutionResult, JobType } from "./types";
+
+type StoredPostRecord = {
+  id: string;
+  generated_content: string;
+  edited_content: string | null;
+  status: "draft" | "approved" | "scheduled" | "published" | "failed" | "cancelled";
+  publish_status: "pending" | "sent_to_threads" | "published" | "failed";
+  scheduled_at: string | null;
+  ai_model: string;
+  source_snapshot: {
+    category?: string;
+  } | null;
+};
 
 function buildRunKey(jobType: JobType, dateInput?: string) {
   const date = dateInput ? new Date(dateInput) : new Date();
@@ -18,6 +47,138 @@ function buildRunKey(jobType: JobType, dateInput?: string) {
   }).format(date);
 
   return `${jobType}:${formattedDate}`;
+}
+
+function parseTimeValue(value: string) {
+  const [hour = "09", minute = "00", second = "00"] = value.split(":");
+  return {
+    hour: Number.parseInt(hour, 10),
+    minute: Number.parseInt(minute, 10),
+    second: Number.parseInt(second, 10)
+  };
+}
+
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "longOffset"
+  });
+
+  const parts = formatter.formatToParts(date);
+  const read = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return {
+    year: Number.parseInt(read("year"), 10),
+    month: Number.parseInt(read("month"), 10),
+    day: Number.parseInt(read("day"), 10),
+    hour: Number.parseInt(read("hour"), 10),
+    minute: Number.parseInt(read("minute"), 10),
+    second: Number.parseInt(read("second"), 10),
+    offsetLabel: read("timeZoneName")
+  };
+}
+
+function getOffsetMinutes(date: Date, timeZone: string) {
+  const { offsetLabel } = getTimeZoneParts(date, timeZone);
+  const matched = offsetLabel.match(/GMT([+-])(\d{2}):?(\d{2})/u);
+
+  if (!matched) {
+    return 0;
+  }
+
+  const [, sign, hours, minutes] = matched;
+  const absoluteMinutes =
+    Number.parseInt(hours, 10) * 60 + Number.parseInt(minutes, 10);
+
+  return sign === "-" ? -absoluteMinutes : absoluteMinutes;
+}
+
+function toUtcFromTimeZone(input: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  timeZone: string;
+}) {
+  const utcGuess = Date.UTC(
+    input.year,
+    input.month - 1,
+    input.day,
+    input.hour,
+    input.minute,
+    input.second
+  );
+  const offsetMinutes = getOffsetMinutes(new Date(utcGuess), input.timeZone);
+
+  return new Date(utcGuess - offsetMinutes * 60_000);
+}
+
+function addDaysToDateParts(
+  input: { year: number; month: number; day: number },
+  dayOffset: number
+) {
+  const date = new Date(Date.UTC(input.year, input.month - 1, input.day));
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate()
+  };
+}
+
+function buildScheduledAtIso(input?: {
+  baseDate?: string;
+  dayOffset?: number;
+  time?: string;
+  timeZone?: string;
+}) {
+  const timeZone = input?.timeZone ?? env.TIMEZONE;
+  const baseDate = input?.baseDate ? new Date(input.baseDate) : new Date();
+  const dayOffset = input?.dayOffset ?? 0;
+  const { year, month, day } = addDaysToDateParts(
+    getTimeZoneParts(baseDate, timeZone),
+    dayOffset
+  );
+  const timeValue = parseTimeValue(input?.time ?? "09:00:00");
+
+  return toUtcFromTimeZone({
+    year,
+    month,
+    day,
+    hour: timeValue.hour,
+    minute: timeValue.minute,
+    second: timeValue.second,
+    timeZone
+  }).toISOString();
+}
+
+function buildDateKey(input: { date: string; timeZone: string; dayOffset?: number }) {
+  const localParts = getTimeZoneParts(new Date(input.date), input.timeZone);
+  const target = addDaysToDateParts(localParts, input.dayOffset ?? 0);
+  const month = String(target.month).padStart(2, "0");
+  const day = String(target.day).padStart(2, "0");
+
+  return `${target.year}-${month}-${day}`;
+}
+
+function getPostContent(post: StoredPostRecord) {
+  return post.edited_content?.trim() || post.generated_content;
+}
+
+function getPostCategory(post: StoredPostRecord) {
+  const category = post.source_snapshot?.category;
+  return typeof category === "string" ? category : undefined;
 }
 
 async function markJobRunSucceeded(runKey: string) {
@@ -39,6 +200,338 @@ async function markJobRunSucceeded(runKey: string) {
   if (error) {
     throw error;
   }
+}
+
+async function fetchDueScheduledPosts(cutoffIso: string) {
+  if (isDemoModeEnabled()) {
+    return listDemoDueScheduledPosts(cutoffIso);
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select(
+      "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot"
+    )
+    .eq("status", "scheduled")
+    .eq("publish_status", "pending")
+    .lte("scheduled_at", cutoffIso)
+    .order("scheduled_at", { ascending: true })
+    .returns<StoredPostRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+async function fetchTomorrowPreviewPosts(baseDate?: string) {
+  const settings = isDemoModeEnabled()
+    ? getDemoAiSettings()
+    : await getDefaultAiSettings();
+  const timeZone = settings?.timezone ?? env.TIMEZONE;
+  const targetDateKey = buildDateKey({
+    date: baseDate ?? new Date().toISOString(),
+    timeZone,
+    dayOffset: 1
+  });
+
+  const posts = isDemoModeEnabled()
+    ? listDemoPosts({
+        status: "scheduled",
+        limit: 20
+      })
+    : await (async () => {
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase
+          .from("posts")
+          .select(
+            "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot"
+          )
+          .eq("status", "scheduled")
+          .order("scheduled_at", { ascending: true })
+          .limit(20)
+          .returns<StoredPostRecord[]>();
+
+        if (error) {
+          throw error;
+        }
+
+        return data ?? [];
+      })();
+
+  return {
+    settings,
+    items: posts.filter((post) => {
+      if (!post.scheduled_at) {
+        return false;
+      }
+
+      return (
+        buildDateKey({
+          date: post.scheduled_at,
+          timeZone
+        }) === targetDateKey
+      );
+    })
+  };
+}
+
+async function updatePublishedPost(input: {
+  id: string;
+  threadId: string;
+  threadPermalink: string | null;
+}) {
+  const publishedAt = new Date().toISOString();
+
+  if (isDemoModeEnabled()) {
+    markDemoPostPublished({
+      id: input.id,
+      threadId: input.threadId,
+      threadPermalink: input.threadPermalink,
+      publishedAt
+    });
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("posts")
+    .update({
+      status: "published",
+      publish_status: "published",
+      thread_id: input.threadId,
+      thread_permalink: input.threadPermalink,
+      published_at: publishedAt
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function updateFailedPost(input: { id: string; errorMessage: string }) {
+  if (isDemoModeEnabled()) {
+    markDemoPostFailed(input);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("posts")
+    .update({
+      status: "failed",
+      publish_status: "failed",
+      generation_notes: {
+        publishError: input.errorMessage
+      }
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function createPublishAttempt(input: {
+  postId: string;
+  requestPayload: Record<string, unknown>;
+  responsePayload: Record<string, unknown>;
+  success: boolean;
+  errorMessage?: string;
+}) {
+  if (isDemoModeEnabled()) {
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { count, error: countError } = await supabase
+    .from("publish_attempts")
+    .select("*", { count: "exact", head: true })
+    .eq("post_id", input.postId);
+
+  if (countError) {
+    throw countError;
+  }
+
+  const { error } = await supabase.from("publish_attempts").insert({
+    post_id: input.postId,
+    attempt_number: (count ?? 0) + 1,
+    request_payload: input.requestPayload,
+    response_payload: input.responsePayload,
+    success: input.success,
+    error_message: input.errorMessage ?? null
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function executeGenerateDailyDraft(baseDate?: string) {
+  const settings = await getDefaultAiSettings();
+  const scheduledAt = buildScheduledAtIso({
+    baseDate,
+    dayOffset: 1,
+    time: settings?.default_post_time ?? "09:00:00",
+    timeZone: settings?.timezone ?? env.TIMEZONE
+  });
+
+  return generateDraftFromProfile({
+    scheduledAt
+  });
+}
+
+async function executeSendDailyTelegram(baseDate?: string) {
+  const { settings, items } = await fetchTomorrowPreviewPosts(baseDate);
+  const firstPost = items[0];
+
+  if (!firstPost) {
+    logger.info("job.send_daily_telegram.skipped", {
+      reason: "no_scheduled_post_for_tomorrow"
+    });
+    return {
+      delivered: false,
+      reason: "no_scheduled_post_for_tomorrow"
+    };
+  }
+
+  const message = renderDraftPreviewMessage({
+    scheduledAt: firstPost.scheduled_at ?? undefined,
+    aiModel: firstPost.ai_model,
+    materialCategory: getPostCategory(firstPost),
+    content: getPostContent(firstPost),
+    dashboardUrl: env.APP_URL
+  });
+
+  const telegramResponse = await sendTelegramMessage({
+    text: message,
+    chatId: settings?.telegram_chat_id
+  });
+
+  return {
+    delivered: true,
+    postId: firstPost.id,
+    telegramResponse
+  };
+}
+
+async function executePublishScheduledPosts(baseDate?: string) {
+  const accessToken = env.THREADS_ACCESS_TOKEN;
+
+  if (!accessToken) {
+    throw new Error("THREADS_ACCESS_TOKEN is required to publish scheduled posts.");
+  }
+
+  const cutoffIso = baseDate ? new Date(baseDate).toISOString() : new Date().toISOString();
+  const duePosts = await fetchDueScheduledPosts(cutoffIso);
+  const results: Array<{
+    postId: string;
+    status: "published" | "failed";
+    threadId?: string;
+    permalink?: string | null;
+    errorMessage?: string;
+  }> = [];
+
+  for (const post of duePosts) {
+    const text = getPostContent(post);
+
+    try {
+      const container = await createTextThread({
+        accessToken,
+        text
+      });
+      const publishResult = await publishThread({
+        accessToken,
+        creationId: container.id
+      });
+      const details = await getThreadDetails({
+        accessToken,
+        threadId: publishResult.id
+      });
+
+      await updatePublishedPost({
+        id: post.id,
+        threadId: publishResult.id,
+        threadPermalink: details.permalink ?? null
+      });
+      await createPublishAttempt({
+        postId: post.id,
+        requestPayload: {
+          text,
+          scheduledAt: post.scheduled_at
+        },
+        responsePayload: {
+          container,
+          publishResult,
+          details
+        },
+        success: true
+      });
+      await recordAuditEvent({
+        action: "post.published",
+        entityType: "post",
+        entityId: post.id,
+        actorType: "system",
+        actorIdentifier: "scheduler",
+        metadata: {
+          threadId: publishResult.id,
+          permalink: details.permalink ?? null
+        }
+      });
+
+      results.push({
+        postId: post.id,
+        status: "published",
+        threadId: publishResult.id,
+        permalink: details.permalink ?? null
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown publish error";
+
+      await updateFailedPost({
+        id: post.id,
+        errorMessage
+      });
+      await createPublishAttempt({
+        postId: post.id,
+        requestPayload: {
+          text,
+          scheduledAt: post.scheduled_at
+        },
+        responsePayload: {},
+        success: false,
+        errorMessage
+      });
+      await recordAuditEvent({
+        action: "post.publish_failed",
+        entityType: "post",
+        entityId: post.id,
+        actorType: "system",
+        actorIdentifier: "scheduler",
+        metadata: {
+          errorMessage
+        }
+      });
+
+      results.push({
+        postId: post.id,
+        status: "failed",
+        errorMessage
+      });
+    }
+  }
+
+  return {
+    cutoffIso,
+    totalDuePosts: duePosts.length,
+    publishedCount: results.filter((item) => item.status === "published").length,
+    failedCount: results.filter((item) => item.status === "failed").length,
+    results
+  };
 }
 
 function assertJobConfig() {
@@ -76,24 +569,58 @@ export async function runJob(
     };
   }
 
-  await markJobRunSucceeded(runKey);
-  logger.info("job.succeeded", {
-    jobType,
-    runKey,
-    mode: isDemoModeEnabled() ? "demo" : "live"
-  });
-  await recordAuditEvent({
-    action: "job.run",
-    entityType: "job_run",
-    entityId: runKey,
-    actorType: "system",
-    actorIdentifier: "scheduler",
-    metadata: {
+  try {
+    const result =
+      jobType === "generate_daily_draft"
+        ? await executeGenerateDailyDraft(options?.date)
+        : jobType === "send_daily_telegram"
+          ? await executeSendDailyTelegram(options?.date)
+          : await executePublishScheduledPosts(options?.date);
+
+    await markJobRunSucceeded(runKey);
+    logger.info("job.succeeded", {
       jobType,
       runKey,
-      mode: isDemoModeEnabled() ? "demo" : "live"
-    }
-  });
+      mode: isDemoModeEnabled() ? "demo" : "live",
+      result
+    });
+    await recordAuditEvent({
+      action: "job.run",
+      entityType: "job_run",
+      entityId: runKey,
+      actorType: "system",
+      actorIdentifier: "scheduler",
+      metadata: {
+        jobType,
+        runKey,
+        mode: isDemoModeEnabled() ? "demo" : "live",
+        result
+      }
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown job execution error";
+
+    await markJobRunFailed(runKey, errorMessage);
+    logger.error("job.failed", {
+      jobType,
+      runKey,
+      error: errorMessage
+    });
+    await recordAuditEvent({
+      action: "job.failed",
+      entityType: "job_run",
+      entityId: runKey,
+      actorType: "system",
+      actorIdentifier: "scheduler",
+      metadata: {
+        jobType,
+        runKey,
+        errorMessage
+      }
+    });
+    throw error;
+  }
 
   return {
     jobType,

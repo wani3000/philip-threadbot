@@ -6,11 +6,16 @@ export function requireCronSecret(
   response: Response,
   next: NextFunction
 ) {
-  const providedSecret = request.header("x-cron-secret");
+  const headerSecret = request.header("x-cron-secret");
+  const authorizationHeader = request.header("authorization");
+  const bearerSecret = authorizationHeader?.startsWith("Bearer ")
+    ? authorizationHeader.slice("Bearer ".length)
+    : null;
+  const providedSecret = headerSecret ?? bearerSecret;
 
   if (!providedSecret) {
     response.status(401).json({
-      error: "Missing x-cron-secret header."
+      error: "Missing cron secret header."
     });
     return;
   }

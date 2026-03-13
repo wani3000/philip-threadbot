@@ -19,6 +19,7 @@ export type AiSettingsRecord = {
   default_model: string;
   custom_system_prompt: string | null;
   tone_settings: Record<string, unknown>;
+  telegram_chat_id?: string;
   default_post_time: string;
   timezone: string;
 };
