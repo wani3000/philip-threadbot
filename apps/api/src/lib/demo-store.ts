@@ -171,7 +171,7 @@ const demoPosts: DemoPost[] = [
       "수백 개의 트랜잭션을 한 줄씩 뒤지던 장면이 먼저 떠오릅니다.\n\n문제는 데이터 부족이 아니라 구조 부재였습니다. 제가 직접 정보 계층을 다시 그렸을 때, 수사 흐름은 미로에서 지도처럼 바뀌었습니다.\n\n그 결과 신고 800건, 2400억 규모의 흐름을 더 빠르게 읽을 수 있는 툴이 됐습니다.\n\n#UX디자인 #블록체인 #데이터시각화 #디자이너",
     edited_content: null,
     ai_provider: "anthropic",
-    ai_model: "claude-3-7-sonnet-latest",
+    ai_model: "claude-sonnet-4-6",
     status: "scheduled",
     scheduled_at: tomorrowAt(9, 0),
     published_at: null,
@@ -190,7 +190,7 @@ const demoPosts: DemoPost[] = [
 const demoSettings: DemoAiSettings = {
   id: "demo-ai-settings",
   default_provider: "anthropic",
-  default_model: "claude-3-7-sonnet-latest",
+  default_model: "claude-sonnet-4-6",
   custom_system_prompt: null,
   tone_settings: {},
   telegram_chat_id: "demo-chat",

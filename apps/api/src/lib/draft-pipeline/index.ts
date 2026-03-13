@@ -15,7 +15,7 @@ import {
 import { DraftPipelineInput } from "./types";
 
 const fallbackModels: Record<AiProviderName, string> = {
-  anthropic: "claude-3-7-sonnet-latest",
+  anthropic: "claude-sonnet-4-6",
   openai: "gpt-4.1-mini",
   gemini: "gemini-2.0-flash"
 };
