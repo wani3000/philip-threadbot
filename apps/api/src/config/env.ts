@@ -2,6 +2,26 @@ import "dotenv/config";
 
 import { z } from "zod";
 
+const booleanLikeSchema = z.preprocess((value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+
+    if (["true", "1", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "off", ""].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return value;
+}, z.boolean());
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -11,7 +31,7 @@ const envSchema = z.object({
   API_URL: z.string().url().default("http://localhost:4000"),
   TIMEZONE: z.string().default("Asia/Seoul"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  LOCAL_DEMO_MODE: z.coerce.boolean().default(false),
+  LOCAL_DEMO_MODE: booleanLikeSchema.default(false),
   ADMIN_EMAILS: z
     .string()
     .default("")
