@@ -1,5 +1,6 @@
 import { isLocalDemoMode } from "./runtime";
 import { createServerSupabaseClient } from "./supabase/server";
+import { hasSupabaseAuthConfig } from "./supabase/config";
 
 function getAdminEmails() {
   return String(process.env.ADMIN_EMAILS ?? "")
@@ -17,6 +18,10 @@ export async function getAdminAccessToken() {
     }
 
     return demoToken;
+  }
+
+  if (!hasSupabaseAuthConfig()) {
+    throw new Error("Supabase 인증 설정이 아직 완료되지 않았습니다.");
   }
 
   const supabase = await createServerSupabaseClient();
@@ -37,7 +42,18 @@ export async function getAdminSessionState() {
       isAuthenticated: true,
       isAdmin: true,
       email: getAdminEmails()[0] ?? "demo-admin@local",
-      mode: "demo" as const
+      mode: "demo" as const,
+      authConfigured: true
+    };
+  }
+
+  if (!hasSupabaseAuthConfig()) {
+    return {
+      isAuthenticated: false,
+      isAdmin: false,
+      email: null,
+      mode: "live" as const,
+      authConfigured: false
     };
   }
 
@@ -53,7 +69,8 @@ export async function getAdminSessionState() {
     isAuthenticated: Boolean(user),
     isAdmin,
     email,
-    mode: "live" as const
+    mode: "live" as const,
+    authConfigured: true
   };
 }
 

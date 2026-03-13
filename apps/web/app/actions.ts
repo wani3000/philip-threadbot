@@ -13,6 +13,7 @@ import {
   updateProfileMaterial
 } from "../lib/api";
 import { isLocalDemoMode } from "../lib/runtime";
+import { getMissingSupabaseConfigMessage } from "../lib/supabase/config";
 import { createServerSupabaseClient } from "../lib/supabase/server";
 
 function parseTags(rawValue: FormDataEntryValue | null) {
@@ -137,9 +138,22 @@ export async function signInAction(formData: FormData) {
     redirect("/");
   }
 
+  let supabase;
+
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (error) {
+    redirect(
+      `/login?error=${encodeURIComponent(
+        error instanceof Error
+          ? error.message
+          : getMissingSupabaseConfigMessage()
+      )}`
+    );
+  }
+
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,

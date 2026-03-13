@@ -34,9 +34,7 @@ function toBase64Url(input: Buffer | string) {
 function fromBase64Url(input: string) {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding =
-    normalized.length % 4 === 0
-      ? ""
-      : "=".repeat(4 - (normalized.length % 4));
+    normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
 
   return Buffer.from(`${normalized}${padding}`, "base64");
 }
@@ -186,14 +184,17 @@ threadsRouter.all(
   })
 );
 
-threadsRouter.get("/oauth/delete/status", (request: RequestWithContext, response) => {
-  const code = request.query.code;
+threadsRouter.get(
+  "/oauth/delete/status",
+  (request: RequestWithContext, response) => {
+    const code = request.query.code;
 
-  response.status(200).json({
-    status: "completed",
-    confirmation_code: typeof code === "string" ? code : null
-  });
-});
+    response.status(200).json({
+      status: "completed",
+      confirmation_code: typeof code === "string" ? code : null
+    });
+  }
+);
 
 threadsRouter.post(
   "/publish-test",

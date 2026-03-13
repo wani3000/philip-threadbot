@@ -27,7 +27,13 @@ type StoredPostRecord = {
   id: string;
   generated_content: string;
   edited_content: string | null;
-  status: "draft" | "approved" | "scheduled" | "published" | "failed" | "cancelled";
+  status:
+    | "draft"
+    | "approved"
+    | "scheduled"
+    | "published"
+    | "failed"
+    | "cancelled";
   publish_status: "pending" | "sent_to_threads" | "published" | "failed";
   scheduled_at: string | null;
   ai_model: string;
@@ -163,7 +169,11 @@ function buildScheduledAtIso(input?: {
   }).toISOString();
 }
 
-function buildDateKey(input: { date: string; timeZone: string; dayOffset?: number }) {
+function buildDateKey(input: {
+  date: string;
+  timeZone: string;
+  dayOffset?: number;
+}) {
   const localParts = getTimeZoneParts(new Date(input.date), input.timeZone);
   const target = addDaysToDateParts(localParts, input.dayOffset ?? 0);
   const month = String(target.month).padStart(2, "0");
@@ -422,10 +432,14 @@ async function executePublishScheduledPosts(baseDate?: string) {
   const accessToken = env.THREADS_ACCESS_TOKEN;
 
   if (!accessToken) {
-    throw new Error("THREADS_ACCESS_TOKEN is required to publish scheduled posts.");
+    throw new Error(
+      "THREADS_ACCESS_TOKEN is required to publish scheduled posts."
+    );
   }
 
-  const cutoffIso = baseDate ? new Date(baseDate).toISOString() : new Date().toISOString();
+  const cutoffIso = baseDate
+    ? new Date(baseDate).toISOString()
+    : new Date().toISOString();
   const duePosts = await fetchDueScheduledPosts(cutoffIso);
   const results: Array<{
     postId: string;
@@ -528,7 +542,8 @@ async function executePublishScheduledPosts(baseDate?: string) {
   return {
     cutoffIso,
     totalDuePosts: duePosts.length,
-    publishedCount: results.filter((item) => item.status === "published").length,
+    publishedCount: results.filter((item) => item.status === "published")
+      .length,
     failedCount: results.filter((item) => item.status === "failed").length,
     results
   };

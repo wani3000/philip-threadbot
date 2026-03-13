@@ -4,7 +4,7 @@ Philip Threadbot is an admin-operated automation system that turns Philip Design
 
 ## Current Context
 
-Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, and pre-launch quality gates.
+Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, pre-launch quality gates, and GitHub-to-Vercel automatic deployment for both `web` and `api`.
 
 ## Core Directory Structure
 
@@ -34,7 +34,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## Agent Ownership
 
 - Active agent: Codex
-- Current representative task: `PT-29` 원재료 카테고리 구조 정합성 반영
+- Current representative task: `PT-30` Vercel 무료 배포 및 Google 로그인 준비
 - Completed subtasks:
   - `PT-7` `[INFRA] Initialize monorepo workspace and baseline tooling`
   - `PT-8` `[INFRA] Set up environment variable strategy and example files`
@@ -57,7 +57,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-26` `[BE] Supabase 세션 기반 관리자 인증 연동`
   - `PT-27` `[FE] 로그인·로그아웃 흐름 및 보호 경로 정리`
   - `PT-28` `[DB] 원재료 카테고리 enum·마이그레이션·데모 데이터 정합성 반영`
-- Next planned executable task: Threads 실계정 연결 및 운영 검증
+- Next planned executable task: Supabase 실프로젝트 연결 및 Google 로그인 활성화
 
 ## Work Status
 
@@ -85,8 +85,22 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - Vercel cron-compatible auth support and daily UTC cron schedule config
 - Next executable tasks:
   - Supabase 실DB 연결로 예약 발행 상태 영속화
+  - Vercel `web` 프로젝트에 Supabase 공개 환경변수 주입
+  - Supabase Google provider 설정 및 허용 관리자 이메일 검증
   - 실운영 cron 검증
   - 운영 모드 전환
+
+## Deployment Status
+
+- GitHub remote: `wani3000/philip-threadbot`
+- Production branch: `main`
+- Git push now triggers Vercel production deployments for both projects
+- Web: [https://philip-threadbot-web.vercel.app](https://philip-threadbot-web.vercel.app)
+- API: [https://philip-threadbot-api.vercel.app](https://philip-threadbot-api.vercel.app)
+- Current remaining external dependency for real login:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - Google OAuth provider setup in Supabase
 
 ## UI Approval Queue
 

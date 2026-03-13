@@ -1,16 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabaseAuthConfig, getSupabaseConfigErrorMessage } from "./config";
 
 export async function createServerSupabaseClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } =
+    getSupabaseAuthConfig();
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "웹 인증에는 SUPABASE_URL과 SUPABASE_ANON_KEY가 필요합니다."
-    );
+    throw new Error(getSupabaseConfigErrorMessage());
   }
 
   const cookieStore = await cookies();

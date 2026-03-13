@@ -86,6 +86,11 @@ Todo List:
 - `[x]` `PT-8` environment variable contract — agent: Codex
 - `[x]` `PT-9` deployment and cron conventions — agent: Codex
 
+Iteration:
+
+- 2026-03-13: GitHub `main` -> Vercel production auto deployment was verified end-to-end after setting per-project `rootDirectory`.
+- 2026-03-13: `apps/web` Vercel build initially failed because public Supabase envs were unset; web deployment now uses explicit env gating and clearer login-state messaging.
+
 ## PT-2 Data model and authentication foundation
 
 Subtasks:

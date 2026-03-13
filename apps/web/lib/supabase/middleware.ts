@@ -2,22 +2,46 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { isAllowedAdminEmail } from "../admin";
 import { isLocalDemoMode } from "../runtime";
+import {
+  getMissingSupabaseConfigMessage,
+  getSupabaseAuthConfig
+} from "./config";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request
   });
 
+  const { pathname } = request.nextUrl;
+  const isLoginPath = pathname === "/login";
+  const isProtectedPath =
+    pathname === "/" ||
+    pathname === "/profile" ||
+    pathname.startsWith("/profile/") ||
+    pathname === "/calendar" ||
+    pathname.startsWith("/calendar/") ||
+    pathname === "/library" ||
+    pathname.startsWith("/library/") ||
+    pathname === "/settings" ||
+    pathname.startsWith("/settings/") ||
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/");
+
   if (isLocalDemoMode()) {
     return response;
   }
 
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } =
+    getSupabaseAuthConfig();
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (isProtectedPath) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("error", getMissingSupabaseConfigMessage());
+      return NextResponse.redirect(redirectUrl);
+    }
+
     return response;
   }
 
@@ -43,21 +67,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-  const isLoginPath = pathname === "/login";
-  const isProtectedPath =
-    pathname === "/" ||
-    pathname === "/profile" ||
-    pathname.startsWith("/profile/") ||
-    pathname === "/calendar" ||
-    pathname.startsWith("/calendar/") ||
-    pathname === "/library" ||
-    pathname.startsWith("/library/") ||
-    pathname === "/settings" ||
-    pathname.startsWith("/settings/") ||
-    pathname === "/dashboard" ||
-    pathname.startsWith("/dashboard/");
 
   const isAdmin = isAllowedAdminEmail(user?.email ?? null);
 
