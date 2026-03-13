@@ -671,10 +671,10 @@ Subtasks:
 
 - `PT-31` `[FE] Google OAuth 로그인 버튼·콜백 흐름 추가` — done
 - `PT-32` `[INFRA] Vercel 무료 배포 구성 및 도메인 연결` — done
-- `PT-43` `[INFRA] Supabase·Google 실로그인 자격증명 연결 및 활성화` — pending
-- `PT-45` `[INFRA] API Supabase 실DB 연결 및 demo mode 해제` — pending
-- `PT-46` `[INFRA] LLM provider 키 연결 및 실초안 생성 검증` — pending
-- `PT-47` `[INFRA] 실운영 cron·텔레그램·Threads end-to-end 검증` — pending
+- `PT-43` `[INFRA] Supabase·Google 실로그인 자격증명 연결 및 활성화` — done
+- `PT-45` `[INFRA] API Supabase 실DB 연결 및 demo mode 해제` — done
+- `PT-46` `[INFRA] LLM provider 키 연결 및 실초안 생성 검증` — done
+- `PT-47` `[INFRA] 실운영 cron·텔레그램·Threads end-to-end 검증` — done
 
 Approach:
 
@@ -692,16 +692,17 @@ Iteration:
 - 2026-03-13 final readiness review:
   - Production API `GET /health` now reports `mode: live`.
   - Vercel API and web Supabase env wiring is complete, and the new Supabase project migrations are applied.
-  - The remaining blockers are one real Google sign-in verification and insufficient Anthropic credits for live draft generation.
+  - Google sign-in, Anthropic live draft generation, Telegram delivery, and Threads live publishing have all now been verified.
+  - PT-30 is complete. Remaining work has moved to PT-34 expansion items.
 
 Todo List:
 
 - `[x]` `PT-31` Google OAuth button and callback flow — agent: Codex
 - `[x]` `PT-32` Vercel deployment configuration and domains — agent: Codex
-- `[ ]` `PT-43` Supabase and Google live credential activation — agent: Codex, pending final human sign-in verification
+- `[x]` `PT-43` Supabase and Google live credential activation — agent: Codex
 - `[x]` `PT-45` API live Supabase connection and demo-mode exit — agent: Codex
-- `[ ]` `PT-46` LLM provider key hookup and live draft verification — agent: Codex, blocked by Anthropic credit balance
-- `[ ]` `PT-47` production cron, Telegram, and Threads end-to-end verification — next agent
+- `[x]` `PT-46` LLM provider key hookup and live draft verification — agent: Codex
+- `[x]` `PT-47` production cron, Telegram, and Threads end-to-end verification — agent: Codex
 
 ## PT-44 운영 시작 전환 마감
 
@@ -749,7 +750,8 @@ Subtasks:
 
 - `PT-50` `[BE] 초기 설정 미존재 시 기본 AI 설정 자동 생성` — executable now
 - `PT-51` `[DB] 필립 원재료 30+건 적재용 구조화 시드 준비` — executable now
-- `PT-52` `[INFRA] Google 실제 로그인 및 운영 전환 최종 체크리스트 검증` — pending
+- `PT-52` `[INFRA] Google 실제 로그인 및 운영 전환 최종 체크리스트 검증` — done
+- `PT-53` `[BE] Threads 500자 제한 후처리 보강 및 실발행 재검증` — done
 
 Approach:
 
@@ -803,6 +805,21 @@ run final cron and Threads validation after LLM credits are available
 record final launch blockers in docs and Jira
 ```
 
+`PT-53`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/prompt.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/index.ts`
+- Pseudocode:
+
+```text
+normalize/extract hashtags
+enforce max 500 characters in finalize step
+preserve 3 to 5 hashtags
+truncate body safely without breaking the Threads publish contract
+rerun generate -> telegram -> publish validation
+```
+
 Iteration:
 
 - 2026-03-13:
@@ -812,13 +829,15 @@ Iteration:
     - the full Philip content library from the planning database had not been structured or importable yet
   - Added auto-bootstrap for `ai_settings` and a structured JSON + import script for production source materials.
   - Applied the new Supabase project migrations and imported 49 total source-material rows, with the bulk import script inserting 43 additional unique rows after skipping 2 title overlaps.
-  - Live draft generation now reaches Anthropic successfully, so the remaining PT-46 blocker is account credit balance rather than code integration.
+  - After Anthropic credits were restored, live draft generation was verified successfully.
+  - During end-to-end publish validation, a real Threads API `500 characters max` failure surfaced; PT-53 was created, implemented, and revalidated successfully.
 
 Todo List:
 
 - `[x]` `PT-50` default AI settings auto-bootstrap — agent: Codex
 - `[x]` `PT-51` structured Philip content seed and import tooling — agent: Codex
-- `[ ]` `PT-52` Google live sign-in and final launch checklist verification — next agent
+- `[x]` `PT-52` Google live sign-in and final launch checklist verification — agent: Codex
+- `[x]` `PT-53` Threads 500-char post-finalization safeguard and republish verification — agent: Codex
 
 ## Handoff Note
 
@@ -833,11 +852,12 @@ Iteration:
   - `PT-45` Supabase 실DB 연결 및 production live mode 전환
   - `PT-50` 기본 AI 설정 자동 생성 경로 추가
   - `PT-51` 필립 원재료 49건 적재용 구조화 시드/임포트 경로 준비
+  - `PT-43` Google 실제 로그인 검증 완료
+  - `PT-46` Anthropic 실초안 생성 검증 완료
+  - `PT-47` generate -> telegram -> Threads 실운영 end-to-end 검증 완료
+  - `PT-52` 운영 전환 최종 체크리스트 완료
+  - `PT-53` Threads 500자 제한 후처리 보강 및 재검증 완료
 - 미완료 작업 및 현재 상태:
-  - `PT-43`은 Google provider와 관리자 allowlist까지 연결됐고, 실제 관리자 계정 1회 로그인 검증만 남았습니다.
-  - `PT-46`은 Anthropic API까지 도달하지만 현재 계정의 크레딧 부족으로 실초안 생성이 실패합니다.
-  - `PT-47`은 위 두 항목이 풀린 뒤 최종 cron/Telegram/Threads end-to-end 검증만 남았습니다.
-  - `PT-52`는 운영 전환 최종 체크리스트 묶음으로 남아 있습니다.
   - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
 - 작업 중 발견한 이슈나 주의사항:
   - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
@@ -847,16 +867,11 @@ Iteration:
   - `ai_settings` 테이블이 비어 있어도 이제 API가 기본 설정을 자동 생성합니다.
   - 새 Supabase 프로젝트에는 Philip 원재료가 총 49건 적재되어 있습니다.
 - 다음으로 처리해야 할 하위 태스크 번호 및 순서:
-  - `PT-52`
-  - `PT-43`
-  - `PT-46`
-  - `PT-47`
   - `PT-40`
   - `PT-41`
   - `PT-42`
   - `PT-39`
 - 막히거나 판단이 필요한 부분:
-  - 운영 전환이 목적이면 PT-34 확장 작업보다 `PT-52 -> PT-43 -> PT-46 -> PT-47` 순서가 최우선입니다.
-  - `PT-46`은 코드 수정이 아니라 Anthropic 과금 또는 대체 LLM 키 준비가 먼저입니다.
+  - 운영 필수 범위는 종료되었고, 이제는 PT-34 확장 작업만 남았습니다.
 - UI 승인 대기 중인 이슈 목록:
   - 없음

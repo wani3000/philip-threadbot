@@ -1,5 +1,8 @@
 import { AiSettingsRecord, ProfileMaterialRecord } from "./types";
 
+const maxThreadsCharacters = 500;
+const defaultFallbackTags = ["Threads", "디자인", "필립"];
+
 const simonWritingStageRules = [
   "Stage 1 — simon-writing 문체 가공:",
   "- 도입은 추상적 선언 대신 장면, 관찰, 숫자, 감각 중 하나로 시작합니다.",
@@ -74,6 +77,86 @@ export function buildDraftUserPrompt(material: ProfileMaterialRecord) {
   ].join("\n");
 }
 
-export function finalizeDraftText(text: string) {
-  return text.replace(/\n{3,}/g, "\n\n").trim();
+function normalizeHashtags(tags: string[]) {
+  const seen = new Set<string>();
+
+  return tags
+    .map((tag) => tag.trim().replace(/^#+/u, ""))
+    .filter(Boolean)
+    .map((tag) => `#${tag.replace(/\s+/gu, "")}`)
+    .filter((tag) => {
+      if (seen.has(tag)) {
+        return false;
+      }
+
+      seen.add(tag);
+      return true;
+    });
+}
+
+function trimBodyToFit(body: string, maxLength: number) {
+  if (body.length <= maxLength) {
+    return body;
+  }
+
+  if (maxLength <= 3) {
+    return body.slice(0, maxLength).trim();
+  }
+
+  const candidate = body.slice(0, maxLength - 3);
+  const lineBreakIndex = candidate.lastIndexOf("\n");
+  const spaceIndex = candidate.lastIndexOf(" ");
+  const boundary = Math.max(lineBreakIndex, spaceIndex);
+  const safeCandidate =
+    boundary > Math.floor((maxLength - 3) * 0.6)
+      ? candidate.slice(0, boundary)
+      : candidate;
+
+  return `${safeCandidate.trimEnd().replace(/[.!?,:;]+$/u, "")}...`;
+}
+
+export function finalizeDraftText(text: string, fallbackTags: string[] = []) {
+  const cleanedText = text.replace(/\n{3,}/g, "\n\n").trim();
+  const extractedHashtags = cleanedText.match(/#[^\s#]+/gu) ?? [];
+  const normalizedHashtags = normalizeHashtags([
+    ...extractedHashtags,
+    ...fallbackTags,
+    ...defaultFallbackTags
+  ]).slice(0, 5);
+  const hashtags = normalizedHashtags.slice(
+    0,
+    Math.max(3, Math.min(normalizedHashtags.length, 5))
+  );
+  const hashtagsLine = hashtags.join(" ");
+  const body = cleanedText
+    .replace(/#[^\s#]+/gu, "")
+    .replace(/[ \t]+\n/gu, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const separatorLength = body && hashtagsLine ? 2 : 0;
+  const maxBodyLength = Math.max(
+    0,
+    maxThreadsCharacters - hashtagsLine.length - separatorLength
+  );
+  const trimmedBody = trimBodyToFit(body, maxBodyLength);
+
+  if (!hashtagsLine) {
+    return trimmedBody.slice(0, maxThreadsCharacters).trim();
+  }
+
+  const finalText = trimmedBody
+    ? `${trimmedBody}\n\n${hashtagsLine}`
+    : hashtagsLine;
+
+  if (finalText.length <= maxThreadsCharacters) {
+    return finalText;
+  }
+
+  const hardTrimmedBody = trimBodyToFit(
+    trimmedBody,
+    Math.max(0, maxThreadsCharacters - hashtagsLine.length - separatorLength)
+  );
+
+  return `${hardTrimmedBody}\n\n${hashtagsLine}`.slice(0, maxThreadsCharacters);
 }

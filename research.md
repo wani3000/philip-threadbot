@@ -427,8 +427,9 @@ The remaining endpoints in this section are design targets if they are not liste
 ### 9.1 Immediate gaps
 
 - Production API now reports `mode: live`, so persistence is running on the real Supabase path.
-- Live draft generation reaches Anthropic successfully, but the current Anthropic account cannot complete requests because its credit balance is too low.
-- Google provider wiring is in place, but one real admin sign-in verification is still required before calling launch complete.
+- Google provider wiring and real admin sign-in verification are complete.
+- Live draft generation, Telegram delivery, and real Threads publishing are all verified on the production path.
+- A real Threads API failure surfaced during launch testing: posts over 500 characters are rejected. The repository now enforces the character limit during draft finalization.
 - Threads publishing works, but insights collection and storage are still not implemented.
 - Calendar remains a grouped-list view rather than the planned monthly drag-and-drop scheduler.
 - Library reuse actions and richer home analytics are still missing.
@@ -452,4 +453,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Threads publishing, and structured Philip source-material seeding. The next meaningful milestone is now the last-mile launch sequence: `PT-52` final Google sign-in verification, `PT-46` resolving Anthropic billing or switching providers, and `PT-47` end-to-end cron verification. Only after that should PT-34 analytics and scheduling expansion become the focus.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Google admin login, Anthropic-backed draft generation, Telegram preview delivery, real Threads publishing, and structured Philip source-material seeding. The MVP launch path is complete. The remaining roadmap is now PT-34 expansion work: Threads insights, richer home analytics, library reuse tooling, and a stronger calendar UX.

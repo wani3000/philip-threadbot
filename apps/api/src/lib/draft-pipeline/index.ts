@@ -79,7 +79,7 @@ export async function generateDraftFromProfile(input: DraftPipelineInput) {
         temperature: 0.85
       });
 
-  const finalText = finalizeDraftText(result.text);
+  const finalText = finalizeDraftText(result.text, material.tags);
 
   if (!finalText) {
     throw new Error("AI가 비어 있는 초안을 반환했습니다.");
