@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/status-badge";
 import {
   fetchAiSettings,
   fetchAuditLogs,
+  fetchOperationalReadiness,
   fetchPosts,
   fetchProfileMaterials
 } from "../lib/api";
@@ -19,6 +20,7 @@ import {
   getProfileCategoryLabel,
   profileCategoryOptions
 } from "../lib/profile-categories";
+import { hasSupabaseAuthConfig } from "../lib/supabase/config";
 
 function getTomorrowRange() {
   const now = new Date();
@@ -49,25 +51,52 @@ export default async function HomePage() {
   try {
     const tomorrowRange = getTomorrowRange();
     const nextWeekRange = getNextWeekRange();
+    const webAuthReady = hasSupabaseAuthConfig();
 
-    const [materials, tomorrowPosts, weekPosts, settings, auditLogs] =
-      await Promise.all([
-        fetchProfileMaterials(),
-        fetchPosts({
-          dateFrom: tomorrowRange.start,
-          dateTo: tomorrowRange.end,
-          limit: 5
-        }),
-        fetchPosts({
-          dateFrom: nextWeekRange.start,
-          dateTo: nextWeekRange.end,
-          limit: 14
-        }),
-        fetchAiSettings(),
-        fetchAuditLogs()
-      ]);
+    const [
+      materials,
+      tomorrowPosts,
+      weekPosts,
+      settings,
+      auditLogs,
+      readiness
+    ] = await Promise.all([
+      fetchProfileMaterials(),
+      fetchPosts({
+        dateFrom: tomorrowRange.start,
+        dateTo: tomorrowRange.end,
+        limit: 5
+      }),
+      fetchPosts({
+        dateFrom: nextWeekRange.start,
+        dateTo: nextWeekRange.end,
+        limit: 14
+      }),
+      fetchAiSettings(),
+      fetchAuditLogs(),
+      fetchOperationalReadiness()
+    ]);
 
     const tomorrowPost = tomorrowPosts[0];
+    const operationalChecks = [
+      ...readiness.checks,
+      {
+        key: "web-auth",
+        label: "웹 Google 로그인",
+        status: webAuthReady ? "ready" : "blocked",
+        message: webAuthReady
+          ? "웹에서 Supabase 공개 키를 읽을 수 있습니다."
+          : "NEXT_PUBLIC_SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_ANON_KEY가 비어 있습니다.",
+        details: webAuthReady
+          ? undefined
+          : ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+      }
+    ];
+    const blockedCount = readiness.summary.blocked + (webAuthReady ? 0 : 1);
+    const warningCount = readiness.summary.warning;
+    const readyCount = readiness.summary.ready + (webAuthReady ? 1 : 0);
+    const overallStatus =
+      blockedCount > 0 ? "blocked" : warningCount > 0 ? "warning" : "ready";
 
     return (
       <AppShell
@@ -92,6 +121,45 @@ export default async function HomePage() {
             <p className="card-copy">{settings.default_provider} 기준 생성</p>
           </section>
         </div>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <div className="item-head">
+            <div>
+              <h2 className="card-title">운영 시작 준비 상태</h2>
+              <p className="card-copy">
+                실운영 전환에 필요한 환경과 외부 연동 상태를 한 번에 확인합니다.
+              </p>
+            </div>
+            <StatusBadge status={overallStatus} />
+          </div>
+          <div className="item-meta" style={{ marginTop: "0.75rem" }}>
+            <span>모드: {readiness.mode}</span>
+            <span>ready {readyCount}</span>
+            <span>warning {warningCount}</span>
+            <span>blocked {blockedCount}</span>
+          </div>
+          <div className="grid two" style={{ marginTop: "1rem" }}>
+            {operationalChecks.map((check) => (
+              <article className="card" key={check.key}>
+                <div className="item-head">
+                  <strong>{check.label}</strong>
+                  <StatusBadge status={check.status} />
+                </div>
+                <p className="card-copy" style={{ marginTop: "0.75rem" }}>
+                  {check.message}
+                </p>
+                {check.details?.length ? (
+                  <div
+                    className="thread-preview"
+                    style={{ marginTop: "0.75rem" }}
+                  >
+                    {check.details.join("\n")}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
 
         <div className="grid two" style={{ marginTop: "1rem" }}>
           <section className="card">

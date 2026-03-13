@@ -333,6 +333,21 @@ button:hover {
   color: var(--danger);
 }
 
+.badge.ready {
+  background: rgba(109, 127, 105, 0.14);
+  color: var(--sage);
+}
+
+.badge.warning {
+  background: rgba(207, 95, 52, 0.16);
+  color: var(--accent-strong);
+}
+
+.badge.blocked {
+  background: rgba(158, 61, 49, 0.12);
+  color: var(--danger);
+}
+
 .thread-preview {
   white-space: pre-wrap;
   line-height: 1.75;

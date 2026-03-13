@@ -15,6 +15,7 @@ import { renderDraftPreviewMessage } from "./lib/telegram/templates";
 import { asyncHandler } from "./lib/http/async-handler";
 import { logger } from "./lib/logger";
 import { recordAuditEvent } from "./lib/audit";
+import { getOperationalReadiness } from "./lib/operations/readiness";
 import { isDemoModeEnabled } from "./lib/runtime";
 
 const app = express();
@@ -33,6 +34,7 @@ app.get("/", (_request, response) => {
     routes: {
       health: "/health",
       adminHealth: "/admin/health",
+      adminReadiness: "/admin/readiness",
       generateDraftCron: "/cron/generate-daily-draft",
       sendTelegramCron: "/cron/send-daily-telegram",
       publishCron: "/cron/publish-approved-posts",
@@ -60,6 +62,15 @@ app.get(
       admin: request.adminUser
     });
   }
+);
+
+app.get(
+  "/admin/readiness",
+  requireAdminAuth,
+  asyncHandler(async (_request, response) => {
+    const readiness = await getOperationalReadiness();
+    response.json(readiness);
+  })
 );
 
 app.post(

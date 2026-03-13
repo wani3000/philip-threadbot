@@ -85,6 +85,23 @@ export type ThreadsStatus = {
   profileUrl: string | null;
 };
 
+export type OperationalReadiness = {
+  mode: "demo" | "live";
+  overallStatus: "ready" | "warning" | "blocked";
+  summary: {
+    ready: number;
+    warning: number;
+    blocked: number;
+  };
+  checks: Array<{
+    key: string;
+    label: string;
+    status: "ready" | "warning" | "blocked";
+    message: string;
+    details?: string[];
+  }>;
+};
+
 type RequestOptions = RequestInit & {
   skipAuth?: boolean;
 };
@@ -162,6 +179,10 @@ export async function fetchAuditLogs(limit = 8) {
 
 export async function fetchThreadsStatus() {
   return apiRequest<ThreadsStatus>("/integrations/threads/status");
+}
+
+export async function fetchOperationalReadiness() {
+  return apiRequest<OperationalReadiness>("/admin/readiness");
 }
 
 export async function updateAiSettings(input: {

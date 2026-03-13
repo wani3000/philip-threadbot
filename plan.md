@@ -672,6 +672,9 @@ Subtasks:
 - `PT-31` `[FE] Google OAuth 로그인 버튼·콜백 흐름 추가` — done
 - `PT-32` `[INFRA] Vercel 무료 배포 구성 및 도메인 연결` — done
 - `PT-43` `[INFRA] Supabase·Google 실로그인 자격증명 연결 및 활성화` — pending
+- `PT-45` `[INFRA] API Supabase 실DB 연결 및 demo mode 해제` — pending
+- `PT-46` `[INFRA] LLM provider 키 연결 및 실초안 생성 검증` — pending
+- `PT-47` `[INFRA] 실운영 cron·텔레그램·Threads end-to-end 검증` — pending
 
 Approach:
 
@@ -684,14 +687,62 @@ Iteration:
   - Completed: GitHub -> Vercel auto deployment, Google OAuth UI/callback code, safe login fallback when Supabase env is missing.
   - Pending: attach live Supabase URL/anon key, configure Google provider in Supabase, verify allowed admin email, and test `/login` end-to-end in production.
   - Current blocker is external credentials rather than application code.
-  - Next agent should start with `PT-43` before any PT-34 expansion work if real login is a priority.
+  - Next agent should start with `PT-45` and `PT-43` before any PT-34 expansion work if real launch is the priority.
   - UI 승인 대기 이슈 목록: 없음
+- 2026-03-13 final readiness review:
+  - Production API `GET /health` still reports `mode: demo`.
+  - Vercel API env is missing `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and all LLM provider keys.
+  - Vercel web env is missing `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  - Real launch is blocked by deployment environment wiring, not by missing product screens.
 
 Todo List:
 
 - `[x]` `PT-31` Google OAuth button and callback flow — agent: Codex
 - `[x]` `PT-32` Vercel deployment configuration and domains — agent: Codex
 - `[ ]` `PT-43` Supabase and Google live credential activation — next agent
+- `[ ]` `PT-45` API live Supabase connection and demo-mode exit — next agent
+- `[ ]` `PT-46` LLM provider key hookup and live draft verification — next agent
+- `[ ]` `PT-47` production cron, Telegram, and Threads end-to-end verification — next agent
+
+## PT-44 운영 시작 전환 마감
+
+Subtasks:
+
+- `PT-48` `[BE] 운영 준비 상태 진단 API 및 홈 표시 구현` — done
+
+Approach:
+
+- Make launch blockers visible in-product so environment wiring can be validated without digging through Vercel or logs.
+- Separate code-complete items from credential-blocked items and expose them as structured readiness checks.
+
+Implementation plan:
+
+`PT-48`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/operations/readiness.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/index.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/lib/api.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/globals.css`
+- Pseudocode:
+
+```text
+check demo/live mode
+check required env groups for Supabase, LLM, cron, Telegram, Threads
+verify Telegram bot with getMe
+verify Threads token with /me
+return blocked/warning/ready payload
+render the checks on the dashboard home screen
+```
+
+Iteration:
+
+- 2026-03-13: Added `/admin/readiness` and a home dashboard panel that clearly surfaces the real launch blockers in production.
+
+Todo List:
+
+- `[x]` `PT-48` readiness diagnostics API and dashboard visibility — agent: Codex
 
 ## Handoff Note
 
@@ -702,20 +753,26 @@ Iteration:
   - `PT-36` Threads 연결 상태 진단 API 추가
   - `PT-37` Threads 연결 설정 화면 추가
   - `PT-38` 라이브러리 검색·필터 추가
+  - `PT-48` 운영 준비 상태 진단 API 및 홈 표시 추가
 - 미완료 작업 및 현재 상태:
-  - `PT-43`은 아직 시작하지 않았고 `To Do` 상태입니다. 코드 준비는 끝났고 외부 자격증명 주입만 남았습니다.
+  - `PT-45`, `PT-43`, `PT-46`, `PT-47`은 모두 `To Do` 상태입니다.
+  - 이 네 개가 해결되기 전에는 운영 시작이 불가합니다.
   - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
 - 작업 중 발견한 이슈나 주의사항:
   - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
   - Threads 진단은 `/integrations/threads/status`와 `/settings/threads`에서 가장 빠르게 확인할 수 있습니다.
+  - 운영 전환 전체 상태는 홈의 운영 준비 상태 카드와 `/admin/readiness`에서 가장 빠르게 확인할 수 있습니다.
   - GitHub push -> Vercel 자동 배포는 현재 정상입니다.
 - 다음으로 처리해야 할 하위 태스크 번호 및 순서:
+  - `PT-45`
   - `PT-43`
+  - `PT-46`
+  - `PT-47`
   - `PT-40`
   - `PT-41`
   - `PT-42`
   - `PT-39`
 - 막히거나 판단이 필요한 부분:
-  - 실로그인을 먼저 열지, 분석/확장 기능부터 갈지는 우선순위 선택 문제입니다. 운영 전환이 목적이면 `PT-43`이 최우선입니다.
+  - 운영 전환이 목적이면 PT-34 확장 작업보다 `PT-45 -> PT-43 -> PT-46 -> PT-47` 순서가 최우선입니다.
 - UI 승인 대기 중인 이슈 목록:
   - 없음

@@ -119,6 +119,8 @@ Current state:
 - the API now has a demo-mode runtime path that works without Supabase, AI provider keys, Telegram token, or Threads credentials
 - the web app now supports Supabase session login, logout, middleware-based session refresh, and server-side token forwarding to the API
 - the Threads integration module now exposes a diagnostic status endpoint that verifies env presence and can read the current Threads profile from the live token
+- the API now exposes `/admin/readiness`, which aggregates live launch blockers across mode, Supabase, LLM, cron, Telegram, and Threads
+- the dashboard home screen now renders the readiness payload together with a web-side Supabase public env check so launch blockers are visible without opening Vercel
 
 ### 4.3 Planned support areas not yet created
 
@@ -147,6 +149,28 @@ Important technical fact:
 
 - Threads profile lookup currently uses `fields=id,username,threads_profile_picture_url`
 - the status route is the quickest way for the next agent to confirm whether a deployment has the correct Threads env attached before attempting publishing or insights work
+
+### 4.7 Operations readiness diagnostics
+
+New behavior:
+
+- `GET /admin/readiness` returns structured checks with `ready`, `warning`, or `blocked` status
+- the checks currently cover:
+  - current runtime mode (`demo` vs `live`)
+  - Supabase server env completeness
+  - at least one configured LLM provider key
+  - cron prerequisites
+  - Telegram bot availability via `getMe`
+  - Threads token validity via `GET /me`
+- the dashboard home page appends one additional web-side check:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Important technical fact:
+
+- this diagnostic layer is intentionally separate from feature workflows
+- the system can be feature-complete enough for review while still being launch-blocked
+- the readiness panel is now the fastest single place to answer "can we operate today?"
 
 ### 4.4 Draft prompt design contract
 
@@ -392,13 +416,17 @@ The remaining endpoints in this section are design targets if they are not liste
 - Authentication: Supabase Auth
 - Notifications: Telegram Bot API
 - AI: Claude, OpenAI, Gemini abstraction layer
-- Scheduling: Vercel/Railway cron endpoints
-- Deployment: Vercel for web, Railway for API
+- Scheduling: Vercel cron endpoints
+- Deployment: Vercel for web and API
 
 ## 9. Risks, Gaps, And Improvement Areas
 
 ### 9.1 Immediate gaps
 
+- Production API still reports `mode: demo`, so scheduled publishing is not yet running on the real persistence path.
+- Vercel API env currently lacks `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- Vercel web env currently lacks `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- No LLM provider key is attached in production, so live draft generation cannot succeed yet.
 - Supabase real-project credentials and Google provider secrets are still not attached in production, so live admin login is not activated yet.
 - Threads publishing works, but insights collection and storage are still not implemented.
 - Calendar remains a grouped-list view rather than the planned monthly drag-and-drop scheduler.
@@ -423,4 +451,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, and the missing core operations screens from the planning document. The next meaningful milestone is no longer bootstrap; it is real-environment activation of Supabase/Google login and then the PT-34 expansion track for analytics, monthly scheduling, and library reuse.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, and the missing core operations screens from the planning document. The next meaningful milestone is no longer bootstrap; it is the operational cutover sequence: `PT-45` API live-mode activation, `PT-43` web/Supabase Google login activation, `PT-46` LLM key hookup, and `PT-47` end-to-end cron verification. Only after that should PT-34 analytics and scheduling expansion become the focus.
