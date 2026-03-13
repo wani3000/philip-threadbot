@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { signInAction } from "../actions";
+import { GoogleSignInButton } from "../../components/google-sign-in-button";
 import { getAdminSessionState } from "../../lib/admin";
 import { isLocalDemoMode } from "../../lib/runtime";
 
@@ -46,25 +47,32 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </div>
           </div>
         ) : (
-          <form
-            action={signInAction}
-            className="form-grid"
-            style={{ marginTop: "1rem" }}
-          >
-            <div className="field">
-              <label htmlFor="email">이메일</label>
-              <input id="email" name="email" type="email" required />
+          <div className="form-grid" style={{ marginTop: "1rem" }}>
+            <GoogleSignInButton />
+
+            <div className="card">
+              <p className="card-copy">
+                기본 운영 계정은 Google 로그인 기준으로 연결합니다. 필요할 때만
+                아래 이메일 로그인 폼을 사용하세요.
+              </p>
             </div>
-            <div className="field">
-              <label htmlFor="password">비밀번호</label>
-              <input id="password" name="password" type="password" required />
-            </div>
-            <div className="actions">
-              <button className="button-primary" type="submit">
-                로그인
-              </button>
-            </div>
-          </form>
+
+            <form action={signInAction} className="form-grid">
+              <div className="field">
+                <label htmlFor="email">이메일</label>
+                <input id="email" name="email" type="email" required />
+              </div>
+              <div className="field">
+                <label htmlFor="password">비밀번호</label>
+                <input id="password" name="password" type="password" required />
+              </div>
+              <div className="actions">
+                <button className="button-secondary" type="submit">
+                  이메일로 로그인
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </section>
     </main>

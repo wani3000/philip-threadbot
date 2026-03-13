@@ -1,0 +1,4 @@
+.vercel
+apps/api/.vercel
+apps/web/.vercel
+apps/web/.next.bak*
