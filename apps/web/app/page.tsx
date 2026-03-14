@@ -3,6 +3,7 @@ import { formatDateTime } from "../components/date";
 import { EmptyState } from "../components/empty-state";
 import { ErrorPanel } from "../components/error-panel";
 import { StatusBadge } from "../components/status-badge";
+import { ThreadPreview } from "../components/thread-preview";
 import {
   fetchAiSettings,
   fetchAuditLogs,
@@ -21,6 +22,7 @@ import {
   profileCategoryOptions
 } from "../lib/profile-categories";
 import { hasSupabaseAuthConfig } from "../lib/supabase/config";
+import { splitStoredThreadContent } from "../lib/thread-content";
 
 function getTomorrowRange() {
   const now = new Date();
@@ -78,6 +80,12 @@ export default async function HomePage() {
     ]);
 
     const tomorrowPost = tomorrowPosts[0];
+    const tomorrowThreadSegments = tomorrowPost
+      ? splitStoredThreadContent(
+          tomorrowPost.edited_content ?? tomorrowPost.generated_content,
+          tomorrowPost.generation_notes?.thread_segments ?? []
+        )
+      : [];
     const operationalChecks = [
       ...readiness.checks,
       {
@@ -199,6 +207,10 @@ export default async function HomePage() {
                       id="editedContent"
                       name="editedContent"
                     />
+                    <p className="card-copy">
+                      이어쓰기 글은 `---` 구분선으로 나뉩니다. 각 구간이
+                      Threads의 한 개 글로 순차 게시됩니다.
+                    </p>
                   </div>
                   <div className="form-grid two">
                     <div className="field">
@@ -250,10 +262,7 @@ export default async function HomePage() {
                     </button>
                   </div>
                 </form>
-                <div className="thread-preview">
-                  {tomorrowPost.edited_content ??
-                    tomorrowPost.generated_content}
-                </div>
+                <ThreadPreview segments={tomorrowThreadSegments} />
               </div>
             ) : (
               <EmptyState

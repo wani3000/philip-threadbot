@@ -3,8 +3,10 @@ import { formatDateTime } from "../../components/date";
 import { EmptyState } from "../../components/empty-state";
 import { ErrorPanel } from "../../components/error-panel";
 import { StatusBadge } from "../../components/status-badge";
+import { ThreadPreview } from "../../components/thread-preview";
 import { fetchPosts } from "../../lib/api";
 import { getProfileCategoryLabel } from "../../lib/profile-categories";
+import { splitStoredThreadContent } from "../../lib/thread-content";
 
 type LibraryPageProps = {
   searchParams?: {
@@ -167,9 +169,12 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                       </div>
                       <StatusBadge status={post.status} />
                     </div>
-                    <div className="thread-preview">
-                      {post.edited_content ?? post.generated_content}
-                    </div>
+                    <ThreadPreview
+                      segments={splitStoredThreadContent(
+                        post.edited_content ?? post.generated_content,
+                        post.generation_notes?.thread_segments ?? []
+                      )}
+                    />
                     {!!post.source_snapshot?.tags?.length && (
                       <div className="tag-row">
                         {post.source_snapshot.tags.map((tag) => (

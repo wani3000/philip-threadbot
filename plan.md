@@ -839,6 +839,92 @@ Todo List:
 - `[x]` `PT-52` Google live sign-in and final launch checklist verification — agent: Codex
 - `[x]` `PT-53` Threads 500-char post-finalization safeguard and republish verification — agent: Codex
 
+## PT-54 이어쓰기형 Threads 생성 최적화 및 코드 리팩토링
+
+Subtasks:
+
+- `PT-55` `[BE] 이어쓰기형 Threads 생성·저장·게시 파이프라인 구현` — done
+- `PT-56` `[BE] 전면 코드 검토 및 리팩토링` — done
+- `PT-57` `[BE] Threads reply 게시 재시도 및 부분 성공 상태 저장 보강` — done
+
+Approach:
+
+- Shift from single-post generation to a cost-efficient multi-post thread workflow so one LLM call can produce 2 to 3 connected posts.
+- Persist thread segments explicitly so the dashboard, Telegram preview, and publish job all operate on the same serialized structure.
+- Stabilize live publishing by treating reply publish propagation delays as a first-class retry case rather than a generic failure.
+- Use this pass to remove obvious duplicated thread-preview rendering in the web layer and improve error typing in the Threads client.
+
+Implementation plan:
+
+`PT-55`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/prompt.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/index.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/draft-pipeline/store.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/thread-content.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/telegram/templates.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/jobs/runner.ts`
+- Pseudocode:
+
+```text
+ask model for 2~3 posts separated by a sentinel token
+normalize into segments and persist them in generation_notes.thread_segments
+serialize the editor-friendly body with --- separators
+send Telegram previews as numbered thread segments
+publish the root post and then publish replies in order
+```
+
+`PT-56`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/components/thread-preview.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/library/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/web/app/calendar/page.tsx`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/threads/client.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/jobs/runner.ts`
+- Pseudocode:
+
+```text
+extract repeated thread preview rendering into one component
+introduce a typed ThreadsApiError for status/payload-aware retry logic
+dedupe repeated post select fields in the publish runner
+keep behavior unchanged outside the threaded publish path
+```
+
+`PT-57`
+
+- Files:
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/jobs/runner.ts`
+  - `/Users/chulwan/Documents/GitHub/designer_threadbot/apps/api/src/lib/threads/client.ts`
+- Pseudocode:
+
+```text
+detect Threads "resource not found" propagation failures by code/subcode
+retry reply publish with a short settling delay before the first publish attempt
+preserve partial root/reply publish payloads in publish_attempts when a later reply fails
+rerun generate -> telegram -> publish against live infra and confirm reply_chain_count > 1
+```
+
+Iteration:
+
+- 2026-03-14:
+  - First live threaded publish attempt proved that generation and Telegram preview already worked, but reply posts failed because Threads could not immediately publish a freshly created reply container.
+  - A direct API experiment showed the failure was not `reply_to_id` itself. The unstable step was `threads_publish` on reply containers right after creation.
+  - Introduced typed Threads API errors, propagation-aware retry logic for reply publish, and partial result persistence in `publish_attempts`.
+  - Refactored web thread previews into a shared component and revalidated the full live flow.
+  - Final live verification succeeded for:
+    - draft generation
+    - Telegram preview
+    - Threads root + reply chain publish
+
+Todo List:
+
+- `[x]` `PT-55` threaded Threads generation, storage, and publishing pipeline — agent: Codex
+- `[x]` `PT-56` code review and refactoring pass — agent: Codex
+- `[x]` `PT-57` reply publish retry and partial-success persistence — agent: Codex
+
 ## Handoff Note
 
 Iteration:
@@ -857,10 +943,15 @@ Iteration:
   - `PT-47` generate -> telegram -> Threads 실운영 end-to-end 검증 완료
   - `PT-52` 운영 전환 최종 체크리스트 완료
   - `PT-53` Threads 500자 제한 후처리 보강 및 재검증 완료
+  - `PT-55` 이어쓰기형 Threads 생성·저장·게시 파이프라인 구현 완료
+  - `PT-56` 전면 코드 검토 및 thread preview 리팩토링 완료
+  - `PT-57` Threads reply publish 재시도 보강 및 라이브 재검증 완료
 - 미완료 작업 및 현재 상태:
   - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
 - 작업 중 발견한 이슈나 주의사항:
   - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
+  - 이어쓰기 글은 `generation_notes.thread_segments`와 `generated_content/edited_content`의 `---` 구분선 두 경로 모두에서 복원됩니다.
+  - Threads live publish는 reply container 생성 직후 바로 publish하면 실패할 수 있어, 현재는 reply publish 전에 짧은 안정화 대기와 조건부 재시도가 들어가 있습니다.
   - Threads 진단은 `/integrations/threads/status`와 `/settings/threads`에서 가장 빠르게 확인할 수 있습니다.
   - 운영 전환 전체 상태는 홈의 운영 준비 상태 카드와 `/admin/readiness`에서 가장 빠르게 확인할 수 있습니다.
   - GitHub push -> Vercel 자동 배포는 현재 정상입니다.

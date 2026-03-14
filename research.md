@@ -13,6 +13,7 @@ The planned runtime flow is:
 
 1. Admin stores structured source material about Philip.
 2. AI selects source material and generates a draft in Philip's tone.
+   The current live implementation generates a 2 to 3 post connected thread from one prompt call, not just a single post.
 3. Admin receives a morning Telegram bot message and can review or adjust the draft.
 4. Approved content is published to Threads at the scheduled time.
 
@@ -124,6 +125,7 @@ Current state:
 - live Supabase production wiring is now attached, the production API reports `mode: live`, and the new Supabase project has been migrated successfully
 - the API now auto-creates a default `ai_settings` row when the table is empty so first-run draft generation no longer depends on manual settings seeding
 - Philip's content database has now been converted into a repository-managed JSON seed plus a bulk import script, and the production Supabase project contains 49 source-material rows across the six fixed categories
+- the live publish pipeline now stores explicit thread segments, sends Telegram previews as numbered 이어쓰기 blocks, and publishes Threads replies sequentially after the root post
 
 ### 4.3 Planned support areas not yet created
 
@@ -192,10 +194,11 @@ The draft pipeline is no longer a generic "write a Threads post" instruction. It
    - use designer vocabulary around structure, visibility, user flow, and decision-making
    - include measurable results whenever the material supports them
 3. Threads optimization
-   - keep the post around 500 characters
+   - generate 2 to 3 connected posts instead of a single long post
+   - keep each post within the 500-character Threads limit
    - use line breaks to shape reading rhythm
-   - make the first line act as a hook
-   - end with 3 to 5 hashtags
+   - make the first line of the first post act as a hook
+   - keep hashtags on the final post only
 
 Reference inspiration:
 
@@ -231,6 +234,31 @@ Scope:
 
 - This mode is for UI and workflow review only.
 - Threads OAuth and test publishing still require real Meta credentials and remain outside the demo path.
+
+### 4.8 Threaded publish pipeline
+
+The system no longer treats a draft as one string only.
+
+Current shape:
+
+- the model is instructed to return 2 to 3 posts separated by `<<<THREAD_BREAK>>>`
+- the backend normalizes those segments and stores them in:
+  - `generation_notes.thread_segments`
+  - `generated_content` or `edited_content` using `---` as the editor-facing separator
+- the dashboard now reconstructs previews from either persisted segments or the serialized body
+- Telegram preview messages label each segment as `이어쓰기 1/N`
+- Threads publishing now works as:
+  1. create root container
+  2. publish root post
+  3. create reply container for each next segment
+  4. wait briefly before publishing each reply container
+  5. retry publish when Threads returns the known propagation error `code 24 / subcode 4279009`
+
+Important technical fact:
+
+- the main live failure was not `reply_to_id` resolution itself
+- direct API verification showed that reply container creation could succeed immediately, while `threads_publish` for that reply container could still fail for a few seconds with "resource not found"
+- the runner now treats that exact error as a transient propagation condition and retries safely
 
 ## 5. Layer Boundaries
 

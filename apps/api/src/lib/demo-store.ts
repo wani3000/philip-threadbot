@@ -4,6 +4,7 @@ import {
   DraftPipelineInput,
   ProfileMaterialRecord
 } from "./draft-pipeline/types";
+import { serializeThreadSegments } from "./thread-content";
 
 type DemoAiSettings = {
   id: string;
@@ -167,8 +168,11 @@ const demoPosts: DemoPost[] = [
       tags: ["UX디자인", "블록체인", "데이터시각화", "디자이너"]
     },
     raw_content: demoMaterials[1].content,
-    generated_content:
-      "수백 개의 트랜잭션을 한 줄씩 뒤지던 장면이 먼저 떠오릅니다.\n\n문제는 데이터 부족이 아니라 구조 부재였습니다. 제가 직접 정보 계층을 다시 그렸을 때, 수사 흐름은 미로에서 지도처럼 바뀌었습니다.\n\n그 결과 신고 800건, 2400억 규모의 흐름을 더 빠르게 읽을 수 있는 툴이 됐습니다.\n\n#UX디자인 #블록체인 #데이터시각화 #디자이너",
+    generated_content: serializeThreadSegments([
+      "수백 개의 트랜잭션을 한 줄씩 뒤지던 장면이 먼저 떠오릅니다.\n\n문제는 데이터 부족이 아니라 구조 부재였습니다.",
+      "제가 직접 정보 계층을 다시 그렸을 때, 수사 흐름은 미로에서 지도처럼 바뀌었습니다.",
+      "그 결과 신고 800건, 2400억 규모의 흐름을 더 빠르게 읽을 수 있는 툴이 됐습니다.\n\n#UX디자인 #블록체인 #데이터시각화 #디자이너"
+    ]),
     edited_content: null,
     ai_provider: "anthropic",
     ai_model: "claude-sonnet-4-6",
@@ -180,7 +184,12 @@ const demoPosts: DemoPost[] = [
     thread_permalink: null,
     generation_notes: {
       title: demoMaterials[1].title,
-      tags: demoMaterials[1].tags
+      tags: demoMaterials[1].tags,
+      thread_segments: [
+        "수백 개의 트랜잭션을 한 줄씩 뒤지던 장면이 먼저 떠오릅니다.\n\n문제는 데이터 부족이 아니라 구조 부재였습니다.",
+        "제가 직접 정보 계층을 다시 그렸을 때, 수사 흐름은 미로에서 지도처럼 바뀌었습니다.",
+        "그 결과 신고 800건, 2400억 규모의 흐름을 더 빠르게 읽을 수 있는 툴이 됐습니다.\n\n#UX디자인 #블록체인 #데이터시각화 #디자이너"
+      ]
     },
     created_at: nowIso(),
     updated_at: nowIso()
@@ -345,6 +354,7 @@ export function markDemoMaterialUsed(profileId: string) {
 export function createDemoGeneratedDraft(input: {
   material: ProfileMaterialRecord;
   generatedContent: string;
+  threadSegments: string[];
   provider: string;
   model: string;
   rawResponse: unknown;
@@ -368,6 +378,7 @@ export function createDemoGeneratedDraft(input: {
     generation_notes: {
       title: input.material.title,
       tags: input.material.tags,
+      thread_segments: input.threadSegments,
       rawResponse: input.rawResponse
     },
     created_at: nowIso(),

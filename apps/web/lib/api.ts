@@ -38,6 +38,9 @@ export type PostRecord = {
     category?: string;
     tags?: string[];
   };
+  generation_notes?: {
+    thread_segments?: string[];
+  };
 };
 
 export type AiSettings = {

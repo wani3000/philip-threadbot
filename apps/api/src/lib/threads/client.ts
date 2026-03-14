@@ -3,18 +3,41 @@ import { env } from "../../config/env";
 const threadsApiBaseUrl = "https://graph.threads.net";
 const inferredThreadsAuthorizeUrl = "https://threads.net/oauth/authorize";
 
+type ThreadsErrorPayload = {
+  error?: {
+    message?: string;
+    type?: string;
+    code?: number;
+    error_subcode?: number;
+    error_user_title?: string;
+    error_user_msg?: string;
+    fbtrace_id?: string;
+  };
+};
+
 type CreateTextThreadInput = {
   accessToken: string;
   text: string;
+  replyToId?: string;
 };
+
+export class ThreadsApiError extends Error {
+  status: number;
+  payload: ThreadsErrorPayload | unknown;
+
+  constructor(status: number, payload: ThreadsErrorPayload | unknown) {
+    super(`Threads API request failed: ${status} ${JSON.stringify(payload)}`);
+    this.name = "ThreadsApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
 
 async function parseJsonResponse(response: Response) {
   const payload = await response.json();
 
   if (!response.ok) {
-    throw new Error(
-      `Threads API request failed: ${response.status} ${JSON.stringify(payload)}`
-    );
+    throw new ThreadsApiError(response.status, payload);
   }
 
   return payload;
@@ -94,12 +117,17 @@ export async function exchangeLongLivedToken(shortLivedToken: string) {
 
 export async function createTextThread({
   accessToken,
-  text
+  text,
+  replyToId
 }: CreateTextThreadInput) {
   const params = new URLSearchParams({
     media_type: "TEXT",
     text
   });
+
+  if (replyToId) {
+    params.set("reply_to_id", replyToId);
+  }
 
   const response = await fetch(`${threadsApiBaseUrl}/me/threads`, {
     signal: AbortSignal.timeout(15_000),

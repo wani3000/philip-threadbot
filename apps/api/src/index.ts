@@ -83,9 +83,10 @@ app.post(
         scheduledAt: request.body?.scheduledAt,
         aiModel: request.body?.aiModel,
         materialCategory: request.body?.materialCategory,
-        content:
+        segments: [
           request.body?.content ??
-          "텔레그램 초안 알림 경로가 정상적으로 연결되었습니다.",
+            "텔레그램 초안 알림 경로가 정상적으로 연결되었습니다."
+        ],
         dashboardUrl: request.body?.dashboardUrl
       });
 

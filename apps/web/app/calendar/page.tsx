@@ -3,7 +3,9 @@ import { formatDateTime } from "../../components/date";
 import { EmptyState } from "../../components/empty-state";
 import { ErrorPanel } from "../../components/error-panel";
 import { StatusBadge } from "../../components/status-badge";
+import { ThreadPreview } from "../../components/thread-preview";
 import { fetchPosts } from "../../lib/api";
+import { splitStoredThreadContent } from "../../lib/thread-content";
 
 export default async function CalendarPage() {
   try {
@@ -62,9 +64,12 @@ export default async function CalendarPage() {
                         </div>
                         <StatusBadge status={post.status} />
                       </div>
-                      <div className="thread-preview">
-                        {post.edited_content ?? post.generated_content}
-                      </div>
+                      <ThreadPreview
+                        segments={splitStoredThreadContent(
+                          post.edited_content ?? post.generated_content,
+                          post.generation_notes?.thread_segments ?? []
+                        )}
+                      />
                     </article>
                   ))}
                 </div>

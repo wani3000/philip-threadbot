@@ -4,7 +4,7 @@ Philip Threadbot is an admin-operated automation system that turns Philip Design
 
 ## Current Context
 
-Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, prompt pipeline, Telegram preview flow, GitHub-to-Vercel automatic deployment for both `web` and `api`, a live Supabase-backed production path, and a production-verified end-to-end flow from draft generation to Telegram preview to real Threads publishing.
+Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, a multi-post thread prompt pipeline, Telegram preview flow, GitHub-to-Vercel automatic deployment for both `web` and `api`, a live Supabase-backed production path, and a production-verified end-to-end flow from draft generation to Telegram preview to real Threads publishing.
 
 ## Core Directory Structure
 
@@ -28,7 +28,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 - Draft generation now uses a fixed three-stage prompt pipeline.
 - Stage 1 injects a `simon-writing`-inspired writing contract so the post starts from a scene or observation, delays the insight until the end, alternates sentence rhythm, and uses one structural metaphor.
 - Stage 2 converts the text into Philip's voice: polite tone, first-person project experience, designer vocabulary, and concrete numbers or outcomes.
-- Stage 3 optimizes the output for Threads with a hook on the first line, intentional line breaks, about 500 characters, and 3 to 5 hashtags.
+- Stage 3 optimizes the output for Threads as a 2 to 3 post connected thread with a hook on the first line, intentional line breaks, a per-post 500 character ceiling, and 3 to 5 hashtags on the final post.
 - Reference source: [juliuschun/simon-writing](https://github.com/juliuschun/simon-writing)
 
 ## Agent Ownership
@@ -71,6 +71,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-51` `[DB] 필립 원재료 30+건 적재용 구조화 시드 준비`
   - `PT-52` `[INFRA] Google 실제 로그인 및 운영 전환 최종 체크리스트 검증`
   - `PT-53` `[BE] Threads 500자 제한 후처리 보강 및 실발행 재검증`
+  - `PT-55` `[BE] 이어쓰기형 Threads 생성·저장·게시 파이프라인 구현`
+  - `PT-56` `[BE] 전면 코드 검토 및 리팩토링`
+  - `PT-57` `[BE] Threads reply 게시 재시도 및 부분 성공 상태 저장 보강`
 - Next planned executable task: `PT-40` Threads 인사이트 수집 및 저장 구현
 
 ## Work Status
@@ -95,6 +98,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - operations-readiness diagnostic API and home dashboard status panel
   - library search and query-based filtering
   - three-stage draft prompt strategy based on `simon-writing` -> Philip voice -> Threads optimization
+  - multi-post thread generation with explicit segment storage and `---`-based editor serialization
   - structured request logging, request IDs, centralized error envelopes, and recent audit log surface
   - first-run default `ai_settings` auto-bootstrap when the table is empty
   - structured Philip content seed JSON plus bulk import script for 30+ production-ready source materials
@@ -108,6 +112,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - live Anthropic draft generation verification
   - end-to-end production validation for draft generation, Telegram preview, and real Threads publishing
   - Threads 500-character publish-safety enforcement in draft finalization
+  - threaded publish stabilization with reply publish retries and shared thread preview rendering on web surfaces
 - Next executable tasks:
   - `PT-40` Threads 인사이트 수집 및 저장 구현
   - `PT-41` 홈 성과 요약 및 원재료 차트 고도화
@@ -134,7 +139,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
-- 마지막 완료 작업: `PT-53` Threads 500자 제한 후처리 보강 및 실발행 재검증
+- 마지막 완료 작업: `PT-57` Threads reply 게시 재시도 및 부분 성공 상태 저장 보강
 - 다음 작업: `PT-40` Threads 인사이트 수집 및 저장 구현
 - 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. MVP 운영 필수 항목은 검증 완료됐고, 이제 남은 작업은 분석/캘린더/라이브러리 고도화 같은 후순위 확장 기능입니다.
 - UI 승인 대기: 없음

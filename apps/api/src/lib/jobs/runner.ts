@@ -13,12 +13,14 @@ import { isDemoModeEnabled } from "../runtime";
 import { recordAuditEvent } from "../audit";
 import { generateDraftFromProfile } from "../draft-pipeline";
 import { getDefaultAiSettings } from "../draft-pipeline/store";
+import { resolvePostThreadSegments } from "../thread-content";
 import { sendTelegramMessage } from "../telegram/client";
 import { renderDraftPreviewMessage } from "../telegram/templates";
 import {
   createTextThread,
   getThreadDetails,
-  publishThread
+  publishThread,
+  ThreadsApiError
 } from "../threads/client";
 import { createOrRestartJobRun, markJobRunFailed } from "./store";
 import { JobExecutionResult, JobType } from "./types";
@@ -40,7 +42,13 @@ type StoredPostRecord = {
   source_snapshot: {
     category?: string;
   } | null;
+  generation_notes: {
+    thread_segments?: string[];
+  } | null;
 };
+
+const storedPostSelect =
+  "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot, generation_notes";
 
 function buildRunKey(jobType: JobType, dateInput?: string) {
   const date = dateInput ? new Date(dateInput) : new Date();
@@ -182,8 +190,12 @@ function buildDateKey(input: {
   return `${target.year}-${month}-${day}`;
 }
 
-function getPostContent(post: StoredPostRecord) {
-  return post.edited_content?.trim() || post.generated_content;
+function getPostThreadSegments(post: StoredPostRecord) {
+  return resolvePostThreadSegments({
+    editedContent: post.edited_content,
+    generatedContent: post.generated_content,
+    generationNotes: post.generation_notes
+  });
 }
 
 function getPostCategory(post: StoredPostRecord) {
@@ -220,9 +232,7 @@ async function fetchDueScheduledPosts(cutoffIso: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("posts")
-    .select(
-      "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot"
-    )
+    .select(storedPostSelect)
     .eq("status", "scheduled")
     .eq("publish_status", "pending")
     .lte("scheduled_at", cutoffIso)
@@ -256,9 +266,7 @@ async function fetchTomorrowPreviewPosts(baseDate?: string) {
         const supabase = createSupabaseAdminClient();
         const { data, error } = await supabase
           .from("posts")
-          .select(
-            "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot"
-          )
+          .select(storedPostSelect)
           .eq("status", "scheduled")
           .order("scheduled_at", { ascending: true })
           .limit(20)
@@ -322,9 +330,12 @@ async function updatePublishedPost(input: {
   }
 }
 
-async function updateFailedPost(input: { id: string; errorMessage: string }) {
+async function updatePartialPublishedPost(input: {
+  id: string;
+  threadId: string;
+  threadPermalink: string | null;
+}) {
   if (isDemoModeEnabled()) {
-    markDemoPostFailed(input);
     return;
   }
 
@@ -332,9 +343,36 @@ async function updateFailedPost(input: { id: string; errorMessage: string }) {
   const { error } = await supabase
     .from("posts")
     .update({
+      publish_status: "sent_to_threads",
+      thread_id: input.threadId,
+      thread_permalink: input.threadPermalink
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function updateFailedPost(input: { id: string; errorMessage: string }) {
+  if (isDemoModeEnabled()) {
+    markDemoPostFailed(input);
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("generation_notes")
+    .eq("id", input.id)
+    .maybeSingle<{ generation_notes?: Record<string, unknown> | null }>();
+  const { error } = await supabase
+    .from("posts")
+    .update({
       status: "failed",
       publish_status: "failed",
       generation_notes: {
+        ...(existing?.generation_notes ?? {}),
         publishError: input.errorMessage
       }
     })
@@ -380,6 +418,84 @@ async function createPublishAttempt(input: {
   }
 }
 
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function isThreadsMissingResourceError(error: unknown) {
+  if (!(error instanceof ThreadsApiError)) {
+    return false;
+  }
+
+  const payload = error.payload as {
+    error?: {
+      code?: number;
+      error_subcode?: number;
+    };
+  };
+
+  return (
+    error.status === 400 &&
+    payload.error?.code === 24 &&
+    payload.error?.error_subcode === 4279009
+  );
+}
+
+async function createReplyThreadWithRetry(input: {
+  accessToken: string;
+  text: string;
+  replyToId: string;
+}) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    try {
+      return await createTextThread(input);
+    } catch (error) {
+      lastError = error;
+
+      if (!isThreadsMissingResourceError(error) || attempt === 5) {
+        break;
+      }
+
+      await wait(attempt * 1500);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Reply publish failed.");
+}
+
+async function publishReplyThreadWithRetry(input: {
+  accessToken: string;
+  creationId: string;
+}) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    if (attempt === 1) {
+      await wait(3_000);
+    }
+
+    try {
+      return await publishThread(input);
+    } catch (error) {
+      lastError = error;
+
+      if (!isThreadsMissingResourceError(error) || attempt === 4) {
+        break;
+      }
+
+      await wait(attempt * 2_000);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Reply publish failed.");
+}
+
 async function executeGenerateDailyDraft(baseDate?: string) {
   const settings = await getDefaultAiSettings();
   const scheduledAt = buildScheduledAtIso({
@@ -412,7 +528,7 @@ async function executeSendDailyTelegram(baseDate?: string) {
     scheduledAt: firstPost.scheduled_at ?? undefined,
     aiModel: firstPost.ai_model,
     materialCategory: getPostCategory(firstPost),
-    content: getPostContent(firstPost),
+    segments: getPostThreadSegments(firstPost),
     dashboardUrl: env.APP_URL
   });
 
@@ -450,37 +566,96 @@ async function executePublishScheduledPosts(baseDate?: string) {
   }> = [];
 
   for (const post of duePosts) {
-    const text = getPostContent(post);
+    const segments = getPostThreadSegments(post);
+    let rootPublishSnapshot:
+      | {
+          container?: Record<string, unknown>;
+          publishResult?: Record<string, unknown>;
+          details?: Record<string, unknown>;
+        }
+      | undefined;
+    const partialReplyChain: Array<{
+      threadId: string;
+      permalink?: string | null;
+    }> = [];
+
+    if (segments.length === 0) {
+      throw new Error("게시할 Threads 세그먼트가 없습니다.");
+    }
 
     try {
-      const container = await createTextThread({
+      const firstContainer = await createTextThread({
         accessToken,
-        text
+        text: segments[0]
       });
-      const publishResult = await publishThread({
+      const firstPublishResult = await publishThread({
         accessToken,
-        creationId: container.id
+        creationId: firstContainer.id
       });
-      const details = await getThreadDetails({
+      const firstDetails = await getThreadDetails({
         accessToken,
-        threadId: publishResult.id
+        threadId: firstPublishResult.id
       });
+      rootPublishSnapshot = {
+        container: firstContainer,
+        publishResult: firstPublishResult,
+        details: firstDetails
+      };
+      await updatePartialPublishedPost({
+        id: post.id,
+        threadId: firstPublishResult.id,
+        threadPermalink: firstDetails.permalink ?? null
+      });
+      const replyChain = [
+        {
+          threadId: firstPublishResult.id,
+          permalink: firstDetails.permalink ?? null
+        }
+      ];
+      partialReplyChain.push(...replyChain);
+
+      let replyToId = firstPublishResult.id;
+
+      for (const segment of segments.slice(1)) {
+        const replyContainer = await createReplyThreadWithRetry({
+          accessToken,
+          text: segment,
+          replyToId
+        });
+        const replyPublishResult = await publishReplyThreadWithRetry({
+          accessToken,
+          creationId: replyContainer.id
+        });
+        const replyDetails = await getThreadDetails({
+          accessToken,
+          threadId: replyPublishResult.id
+        });
+
+        replyChain.push({
+          threadId: replyPublishResult.id,
+          permalink: replyDetails.permalink ?? null
+        });
+        partialReplyChain.push({
+          threadId: replyPublishResult.id,
+          permalink: replyDetails.permalink ?? null
+        });
+        replyToId = replyPublishResult.id;
+      }
 
       await updatePublishedPost({
         id: post.id,
-        threadId: publishResult.id,
-        threadPermalink: details.permalink ?? null
+        threadId: firstPublishResult.id,
+        threadPermalink: firstDetails.permalink ?? null
       });
       await createPublishAttempt({
         postId: post.id,
         requestPayload: {
-          text,
+          segments,
           scheduledAt: post.scheduled_at
         },
         responsePayload: {
-          container,
-          publishResult,
-          details
+          root: rootPublishSnapshot,
+          replyChain
         },
         success: true
       });
@@ -491,16 +666,17 @@ async function executePublishScheduledPosts(baseDate?: string) {
         actorType: "system",
         actorIdentifier: "scheduler",
         metadata: {
-          threadId: publishResult.id,
-          permalink: details.permalink ?? null
+          threadId: firstPublishResult.id,
+          permalink: firstDetails.permalink ?? null,
+          replyCount: Math.max(0, replyChain.length - 1)
         }
       });
 
       results.push({
         postId: post.id,
         status: "published",
-        threadId: publishResult.id,
-        permalink: details.permalink ?? null
+        threadId: firstPublishResult.id,
+        permalink: firstDetails.permalink ?? null
       });
     } catch (error) {
       const errorMessage =
@@ -513,10 +689,13 @@ async function executePublishScheduledPosts(baseDate?: string) {
       await createPublishAttempt({
         postId: post.id,
         requestPayload: {
-          text,
+          segments,
           scheduledAt: post.scheduled_at
         },
-        responsePayload: {},
+        responsePayload: {
+          root: rootPublishSnapshot ?? null,
+          replyChain: partialReplyChain
+        },
         success: false,
         errorMessage
       });

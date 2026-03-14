@@ -150,6 +150,7 @@ export async function markMaterialUsed(profileId: string) {
 export async function saveGeneratedDraft({
   material,
   generatedContent,
+  threadSegments,
   provider,
   model,
   rawResponse,
@@ -157,6 +158,7 @@ export async function saveGeneratedDraft({
 }: {
   material: ProfileMaterialRecord;
   generatedContent: string;
+  threadSegments: string[];
   provider: string;
   model: string;
   rawResponse: unknown;
@@ -166,6 +168,7 @@ export async function saveGeneratedDraft({
     return createDemoGeneratedDraft({
       material,
       generatedContent,
+      threadSegments,
       provider,
       model,
       rawResponse,
@@ -189,6 +192,7 @@ export async function saveGeneratedDraft({
       generation_notes: {
         title: material.title,
         tags: material.tags,
+        thread_segments: threadSegments,
         rawResponse
       }
     })
