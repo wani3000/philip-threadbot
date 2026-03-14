@@ -72,6 +72,32 @@ export type DemoAuditLog = {
   created_at: string;
 };
 
+type DemoAccountInsightSnapshot = {
+  id: string;
+  threads_user_id: string;
+  views: number;
+  likes: number;
+  replies: number;
+  reposts: number;
+  quotes: number;
+  followers_count: number;
+  raw_payload: Record<string, unknown>;
+  created_at: string;
+};
+
+type DemoPostInsightSnapshot = {
+  id: string;
+  post_id: string;
+  threads_media_id: string;
+  views: number;
+  likes: number;
+  replies: number;
+  reposts: number;
+  quotes: number;
+  raw_payload: Record<string, unknown>;
+  created_at: string;
+};
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -215,7 +241,35 @@ const state = {
   posts: demoPosts,
   settings: demoSettings,
   jobRuns: [] as DemoJobRun[],
-  auditLogs: [] as DemoAuditLog[]
+  auditLogs: [] as DemoAuditLog[],
+  accountInsightSnapshots: [
+    {
+      id: randomUUID(),
+      threads_user_id: "demo-threads-user",
+      views: 18240,
+      likes: 524,
+      replies: 41,
+      reposts: 19,
+      quotes: 8,
+      followers_count: 1284,
+      raw_payload: {},
+      created_at: nowIso()
+    }
+  ] as DemoAccountInsightSnapshot[],
+  postInsightSnapshots: [
+    {
+      id: randomUUID(),
+      post_id: "demo-post-1",
+      threads_media_id: "demo-thread-1",
+      views: 3640,
+      likes: 138,
+      replies: 12,
+      reposts: 9,
+      quotes: 3,
+      raw_payload: {},
+      created_at: nowIso()
+    }
+  ] as DemoPostInsightSnapshot[]
 };
 
 function scorePriority(priority: ProfileMaterialRecord["priority"]) {
@@ -449,6 +503,37 @@ export function updateDemoPost(
   return post;
 }
 
+export function duplicateDemoPost(input: {
+  postId: string;
+  scheduledAt?: string | null;
+  status: "draft" | "scheduled";
+}) {
+  const post = getDemoPost(input.postId);
+  const duplicated: DemoPost = {
+    ...post,
+    id: randomUUID(),
+    status: input.status,
+    scheduled_at:
+      input.status === "scheduled"
+        ? (input.scheduledAt ?? post.scheduled_at)
+        : null,
+    published_at: null,
+    publish_status: "pending",
+    thread_id: null,
+    thread_permalink: null,
+    generation_notes: {
+      ...post.generation_notes,
+      reusedFromPostId: post.id,
+      reusedAt: nowIso()
+    },
+    created_at: nowIso(),
+    updated_at: nowIso()
+  };
+
+  state.posts.unshift(duplicated);
+  return duplicated;
+}
+
 export function listDemoDueScheduledPosts(cutoffIso: string) {
   return state.posts.filter(
     (post) =>
@@ -572,4 +657,166 @@ export function appendDemoAuditLog(
 
 export function listDemoAuditLogs(limit = 20) {
   return state.auditLogs.slice(0, limit);
+}
+
+export function syncDemoThreadsInsights() {
+  const createdAt = nowIso();
+  const latestAccount = state.accountInsightSnapshots[0];
+  const nextAccount = {
+    ...latestAccount,
+    id: randomUUID(),
+    views: latestAccount.views + 180,
+    likes: latestAccount.likes + 6,
+    replies: latestAccount.replies + 1,
+    reposts: latestAccount.reposts,
+    followers_count: latestAccount.followers_count + 2,
+    created_at: createdAt
+  };
+
+  state.accountInsightSnapshots.unshift(nextAccount);
+
+  const newPostSnapshots = state.posts
+    .filter((post) => post.status === "published" || post.id === "demo-post-1")
+    .slice(0, 8)
+    .map((post, index) => ({
+      id: randomUUID(),
+      post_id: post.id,
+      threads_media_id: post.thread_id ?? `demo-thread-${index + 1}`,
+      views: 1200 + index * 180,
+      likes: 42 + index * 7,
+      replies: 4 + index,
+      reposts: 2 + Math.floor(index / 2),
+      quotes: 1 + Math.floor(index / 3),
+      raw_payload: {},
+      created_at: createdAt
+    }));
+
+  state.postInsightSnapshots.unshift(...newPostSnapshots);
+
+  return {
+    syncedAt: createdAt,
+    syncedAccount: true,
+    syncedPosts: newPostSnapshots.length
+  };
+}
+
+export function getDemoThreadsInsightsSummary() {
+  const latestAccount = state.accountInsightSnapshots[0] ?? null;
+  const latestPostById = new Map<string, DemoPostInsightSnapshot>();
+
+  for (const snapshot of state.postInsightSnapshots) {
+    if (!latestPostById.has(snapshot.post_id)) {
+      latestPostById.set(snapshot.post_id, snapshot);
+    }
+  }
+
+  const publishedPosts = state.posts.filter(
+    (post) => post.status === "published" || post.status === "scheduled"
+  );
+  const latestPosts = publishedPosts.map((post) => {
+    const snapshot = latestPostById.get(post.id);
+    const engagement =
+      (snapshot?.likes ?? 0) +
+      (snapshot?.replies ?? 0) +
+      (snapshot?.reposts ?? 0) +
+      (snapshot?.quotes ?? 0);
+
+    return {
+      postId: post.id,
+      title: String(post.source_snapshot.title ?? "제목 없음"),
+      category:
+        typeof post.source_snapshot.category === "string"
+          ? post.source_snapshot.category
+          : null,
+      permalink: post.thread_permalink,
+      publishedAt: post.published_at,
+      views: snapshot?.views ?? 0,
+      likes: snapshot?.likes ?? 0,
+      replies: snapshot?.replies ?? 0,
+      reposts: snapshot?.reposts ?? 0,
+      quotes: snapshot?.quotes ?? 0,
+      engagement
+    };
+  });
+  const topPosts = [...latestPosts]
+    .sort((left, right) => right.views - left.views)
+    .slice(0, 5);
+
+  const categoryMap = new Map<
+    string,
+    {
+      category: string;
+      postCount: number;
+      materialCount: number;
+      totalViews: number;
+      totalEngagement: number;
+    }
+  >();
+
+  for (const material of state.materials) {
+    const existing = categoryMap.get(material.category) ?? {
+      category: material.category,
+      postCount: 0,
+      materialCount: 0,
+      totalViews: 0,
+      totalEngagement: 0
+    };
+
+    existing.materialCount += 1;
+    categoryMap.set(material.category, existing);
+  }
+
+  for (const post of latestPosts) {
+    const category = post.category ?? "uncategorized";
+    const existing = categoryMap.get(category) ?? {
+      category,
+      postCount: 0,
+      materialCount: 0,
+      totalViews: 0,
+      totalEngagement: 0
+    };
+
+    existing.postCount += 1;
+    existing.totalViews += post.views;
+    existing.totalEngagement += post.engagement;
+    categoryMap.set(category, existing);
+  }
+
+  const recentViewTotal = topPosts.reduce((sum, post) => sum + post.views, 0);
+  const recentEngagementTotal = topPosts.reduce(
+    (sum, post) => sum + post.engagement,
+    0
+  );
+
+  return {
+    lastSyncedAt:
+      latestAccount?.created_at ??
+      state.postInsightSnapshots[0]?.created_at ??
+      null,
+    account: latestAccount
+      ? {
+          views: latestAccount.views,
+          likes: latestAccount.likes,
+          replies: latestAccount.replies,
+          reposts: latestAccount.reposts,
+          quotes: latestAccount.quotes,
+          followersCount: latestAccount.followers_count
+        }
+      : null,
+    summary: {
+      publishedPostCount: publishedPosts.length,
+      trackedPostCount: latestPosts.length,
+      recentViewTotal,
+      recentEngagementTotal,
+      averageEngagementRate:
+        recentViewTotal > 0
+          ? Number(((recentEngagementTotal / recentViewTotal) * 100).toFixed(1))
+          : 0
+    },
+    latestPosts,
+    topPosts,
+    categoryBreakdown: Array.from(categoryMap.values()).sort(
+      (left, right) => right.totalViews - left.totalViews
+    )
+  };
 }

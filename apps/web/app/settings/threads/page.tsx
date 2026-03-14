@@ -1,6 +1,11 @@
 import { AppShell } from "../../../components/app-shell";
 import { ErrorPanel } from "../../../components/error-panel";
-import { fetchThreadsStatus } from "../../../lib/api";
+import {
+  fetchThreadsInsightsSummary,
+  fetchThreadsStatus
+} from "../../../lib/api";
+import { formatDateTime } from "../../../components/date";
+import { syncThreadsInsightsAction } from "../../actions";
 
 function getStatusCopy(status: string) {
   switch (status) {
@@ -17,7 +22,10 @@ function getStatusCopy(status: string) {
 
 export default async function ThreadsSettingsPage() {
   try {
-    const status = await fetchThreadsStatus();
+    const [status, insights] = await Promise.all([
+      fetchThreadsStatus(),
+      fetchThreadsInsightsSummary()
+    ]);
 
     return (
       <AppShell
@@ -137,6 +145,44 @@ export default async function ThreadsSettingsPage() {
             )}
           </section>
         </div>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <div className="item-head">
+            <div>
+              <h2 className="card-title">인사이트 동기화</h2>
+              <p className="card-copy">
+                게시된 Threads 글의 최신 조회수와 반응 수치를 가져와 홈과
+                라이브러리에 반영합니다.
+              </p>
+            </div>
+            <form action={syncThreadsInsightsAction}>
+              <button className="button-primary" type="submit">
+                지금 동기화
+              </button>
+            </form>
+          </div>
+          <div className="grid three" style={{ marginTop: "1rem" }}>
+            <section className="card metric">
+              <span className="eyebrow">마지막 동기화</span>
+              <strong>
+                {insights.lastSyncedAt
+                  ? formatDateTime(insights.lastSyncedAt)
+                  : "없음"}
+              </strong>
+              <p className="card-copy">Threads 인사이트 최신 스냅샷 시각</p>
+            </section>
+            <section className="card metric">
+              <span className="eyebrow">팔로워</span>
+              <strong>{insights.account?.followersCount ?? 0}</strong>
+              <p className="card-copy">최근 계정 스냅샷 기준</p>
+            </section>
+            <section className="card metric">
+              <span className="eyebrow">추적 중인 글</span>
+              <strong>{insights.summary.trackedPostCount}</strong>
+              <p className="card-copy">최근 인사이트가 있는 게시 글 수</p>
+            </section>
+          </div>
+        </section>
       </AppShell>
     );
   } catch (error) {

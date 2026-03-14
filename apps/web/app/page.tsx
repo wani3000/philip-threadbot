@@ -9,7 +9,8 @@ import {
   fetchAuditLogs,
   fetchOperationalReadiness,
   fetchPosts,
-  fetchProfileMaterials
+  fetchProfileMaterials,
+  fetchThreadsInsightsSummary
 } from "../lib/api";
 import {
   cancelPostAction,
@@ -61,7 +62,8 @@ export default async function HomePage() {
       weekPosts,
       settings,
       auditLogs,
-      readiness
+      readiness,
+      insights
     ] = await Promise.all([
       fetchProfileMaterials(),
       fetchPosts({
@@ -76,7 +78,8 @@ export default async function HomePage() {
       }),
       fetchAiSettings(),
       fetchAuditLogs(),
-      fetchOperationalReadiness()
+      fetchOperationalReadiness(),
+      fetchThreadsInsightsSummary()
     ]);
 
     const tomorrowPost = tomorrowPosts[0];
@@ -105,6 +108,37 @@ export default async function HomePage() {
     const readyCount = readiness.summary.ready + (webAuthReady ? 1 : 0);
     const overallStatus =
       blockedCount > 0 ? "blocked" : warningCount > 0 ? "warning" : "ready";
+    const categoryBreakdown =
+      insights.categoryBreakdown.length > 0
+        ? insights.categoryBreakdown
+        : Array.from(
+            materials
+              .reduce(
+                (accumulator, item) => {
+                  const bucket = accumulator.get(item.category) ?? {
+                    category: item.category,
+                    postCount: 0,
+                    materialCount: 0,
+                    totalViews: 0,
+                    totalEngagement: 0
+                  };
+                  bucket.materialCount += 1;
+                  accumulator.set(item.category, bucket);
+                  return accumulator;
+                },
+                new Map<
+                  string,
+                  {
+                    category: string;
+                    postCount: number;
+                    materialCount: number;
+                    totalViews: number;
+                    totalEngagement: number;
+                  }
+                >()
+              )
+              .values()
+          );
 
     return (
       <AppShell
@@ -166,6 +200,47 @@ export default async function HomePage() {
                 ) : null}
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <div className="item-head">
+            <div>
+              <h2 className="card-title">최근 성과 요약</h2>
+              <p className="card-copy">
+                Threads 인사이트 스냅샷 기준으로 최근 게시 성과를 요약합니다.
+              </p>
+            </div>
+            <div className="item-meta">
+              <span>
+                마지막 동기화:{" "}
+                {insights.lastSyncedAt
+                  ? formatDateTime(insights.lastSyncedAt)
+                  : "아직 없음"}
+              </span>
+            </div>
+          </div>
+          <div className="grid four" style={{ marginTop: "1rem" }}>
+            <section className="card metric">
+              <span className="eyebrow">팔로워</span>
+              <strong>{insights.account?.followersCount ?? 0}</strong>
+              <p className="card-copy">최근 계정 스냅샷 기준</p>
+            </section>
+            <section className="card metric">
+              <span className="eyebrow">최근 조회수</span>
+              <strong>{insights.summary.recentViewTotal}</strong>
+              <p className="card-copy">최근 상위 글 조회수 합계</p>
+            </section>
+            <section className="card metric">
+              <span className="eyebrow">최근 반응 합계</span>
+              <strong>{insights.summary.recentEngagementTotal}</strong>
+              <p className="card-copy">좋아요·답글·리포스트·인용 합산</p>
+            </section>
+            <section className="card metric">
+              <span className="eyebrow">평균 반응률</span>
+              <strong>{insights.summary.averageEngagementRate}%</strong>
+              <p className="card-copy">조회수 대비 최근 반응률</p>
+            </section>
           </div>
         </section>
 
@@ -377,29 +452,82 @@ export default async function HomePage() {
           <section className="card">
             <h2 className="card-title">원재료 현황</h2>
             <div className="list">
-              {Array.from(
-                materials.reduce((accumulator, item) => {
-                  const bucket = accumulator.get(item.category) ?? {
-                    count: 0,
-                    used: 0
-                  };
-                  bucket.count += 1;
-                  bucket.used += item.used_count;
-                  accumulator.set(item.category, bucket);
-                  return accumulator;
-                }, new Map<string, { count: number; used: number }>())
-              ).map(([category, summary]) => (
-                <div className="item" key={category}>
+              {categoryBreakdown.map((summary) => (
+                <div className="item" key={summary.category}>
                   <div className="item-head">
-                    <strong>{category}</strong>
-                    <span>{summary.count}개</span>
+                    <strong>{getProfileCategoryLabel(summary.category)}</strong>
+                    <span>원재료 {summary.materialCount}개</span>
                   </div>
-                  <p className="card-copy">누적 사용 {summary.used}회</p>
+                  <p className="card-copy">
+                    게시 {summary.postCount}건 · 조회수 {summary.totalViews} ·
+                    반응 {summary.totalEngagement}
+                  </p>
+                  <div className="bar-track" style={{ marginTop: "0.75rem" }}>
+                    <div
+                      className="bar-fill"
+                      style={{
+                        width: `${
+                          categoryBreakdown[0]?.totalViews
+                            ? Math.max(
+                                12,
+                                (summary.totalViews /
+                                  categoryBreakdown[0].totalViews) *
+                                  100
+                              )
+                            : 12
+                        }%`
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           </section>
         </div>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <div className="item-head">
+            <div>
+              <h2 className="card-title">상위 성과 글</h2>
+              <p className="card-copy">
+                최근 인사이트 스냅샷에서 조회수 기준으로 정렬한 글입니다.
+              </p>
+            </div>
+          </div>
+          {insights.topPosts.length === 0 ? (
+            <EmptyState
+              title="아직 인사이트가 없습니다"
+              copy="Threads 설정 화면에서 인사이트 동기화를 실행하면 이곳에 쌓입니다."
+            />
+          ) : (
+            <div className="list" style={{ marginTop: "1rem" }}>
+              {insights.topPosts.map((post) => (
+                <article className="item" key={post.postId}>
+                  <div className="item-head">
+                    <div>
+                      <strong>{post.title}</strong>
+                      <div className="item-meta">
+                        <span>{getProfileCategoryLabel(post.category)}</span>
+                        <span>조회수 {post.views}</span>
+                        <span>반응 {post.engagement}</span>
+                      </div>
+                    </div>
+                    {post.permalink ? (
+                      <a
+                        className="button-secondary"
+                        href={post.permalink}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        글 보기
+                      </a>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="card" style={{ marginTop: "1rem" }}>
           <h2 className="card-title">최근 운영 로그</h2>

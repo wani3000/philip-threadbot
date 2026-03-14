@@ -26,3 +26,8 @@ export const regeneratePostSchema = z.object({
   provider: z.enum(["anthropic", "openai", "gemini"]).optional(),
   model: z.string().min(1).optional()
 });
+
+export const reusePostSchema = z.object({
+  scheduledAt: z.string().datetime().nullable().optional(),
+  status: z.enum(["draft", "scheduled"]).default("draft")
+});

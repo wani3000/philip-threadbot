@@ -126,6 +126,7 @@ Current state:
 - the API now auto-creates a default `ai_settings` row when the table is empty so first-run draft generation no longer depends on manual settings seeding
 - Philip's content database has now been converted into a repository-managed JSON seed plus a bulk import script, and the production Supabase project contains 49 source-material rows across the six fixed categories
 - the live publish pipeline now stores explicit thread segments, sends Telegram previews as numbered 이어쓰기 blocks, and publishes Threads replies sequentially after the root post
+- the first post-MVP expansion pass now includes insight snapshot plumbing, a monthly calendar board, and content-reuse operations in the library
 
 ### 4.3 Planned support areas not yet created
 
@@ -259,6 +260,42 @@ Important technical fact:
 - the main live failure was not `reply_to_id` resolution itself
 - direct API verification showed that reply container creation could succeed immediately, while `threads_publish` for that reply container could still fail for a few seconds with "resource not found"
 - the runner now treats that exact error as a transient propagation condition and retries safely
+
+### 4.9 Threads insights and analytics layer
+
+The repository now has an analytics layer for post-launch operations, but it is split between code-complete and infra-complete states.
+
+Implemented:
+
+- migration file `0004_threads_insights.sql`
+- account insight snapshot storage
+- post insight snapshot storage
+- admin endpoints:
+  - `GET /integrations/threads/insights/summary`
+  - `POST /integrations/threads/insights/sync`
+- home dashboard cards and rankings driven by the summary payload
+- Threads settings page manual sync button
+- library card-level insight snippets
+
+Important technical fact:
+
+- if the new tables are not present yet, summary calls now return a safe empty payload so the dashboard still renders
+- actual live syncing still requires the migration to be applied in Supabase production
+- this remaining activation step is tracked separately in Jira as `PT-58`
+
+### 4.10 Calendar and library expansion
+
+New web behavior:
+
+- `/calendar`
+  - now renders a monthly board instead of only a date-grouped list
+  - supports dragging eligible posts into another day cell
+  - preserves the original scheduled hour/minute when moving a post
+- `/library`
+  - now supports reusing an existing post as:
+    - a new draft
+    - a next-day scheduled draft
+  - can surface the latest insight numbers per post when available
 
 ## 5. Layer Boundaries
 

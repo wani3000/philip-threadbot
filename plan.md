@@ -645,10 +645,11 @@ Todo List:
 
 Subtasks:
 
-- `PT-39` `[UI] 월간 캘린더 및 드래그앤드롭 일정 조정 구현` — 후순위
-- `PT-40` `[BE] Threads 인사이트 수집 및 저장 구현` — 후순위
-- `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화` — 후순위
-- `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강` — 후순위
+- `PT-39` `[UI] 월간 캘린더 및 드래그앤드롭 일정 조정 구현` — done
+- `PT-40` `[BE] Threads 인사이트 수집 및 저장 구현` — done
+- `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화` — done
+- `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강` — done
+- `PT-58` `[INFRA] Threads 인사이트 마이그레이션 적용 및 live sync 검증` — pending
 
 Approach:
 
@@ -657,13 +658,20 @@ Approach:
 Iteration:
 
 - 2026-03-13 handoff: keep this task group in `To Do`. Recommended execution order is `PT-40` -> `PT-41` -> `PT-42` -> `PT-39` so metrics/data shape lands before dashboard polish and the calendar UI comes last.
+- 2026-03-14:
+  - `PT-40` implemented the insight snapshot schema, Threads insights summary/sync endpoints, and graceful empty fallback when the tables are not present yet.
+  - `PT-41` added home performance cards, top-post ranking, and category-level bars driven by insight summary data.
+  - `PT-42` added library reuse actions (`새 초안으로 재사용`, `내일 일정으로 복제`) plus per-post insight snippets and direct Threads post links.
+  - `PT-39` replaced the simple list calendar with a monthly board and drag-and-drop schedule movement flow.
+  - Because the new Supabase migration has not been applied in production yet, the live sync activation step was split out as `PT-58`.
 
 Todo List:
 
-- `[ ]` `PT-39` monthly calendar and drag-and-drop rescheduling — next agent
-- `[ ]` `PT-40` Threads insights ingestion and storage — next agent
-- `[ ]` `PT-41` home analytics summary and material charts — next agent
-- `[ ]` `PT-42` library reuse actions and extended operations tools — next agent
+- `[x]` `PT-39` monthly calendar and drag-and-drop rescheduling — agent: Codex
+- `[x]` `PT-40` Threads insights ingestion and storage — agent: Codex
+- `[x]` `PT-41` home analytics summary and material charts — agent: Codex
+- `[x]` `PT-42` library reuse actions and extended operations tools — agent: Codex
+- `[ ]` `PT-58` apply insights migration and verify live sync — next agent
 
 ## PT-30 Vercel 무료 배포 및 Google 로그인 준비
 

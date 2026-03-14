@@ -9,6 +9,8 @@ import {
   deleteProfileMaterial,
   generateDraft,
   regeneratePost,
+  reusePost,
+  syncThreadsInsights,
   updateAiSettings,
   updatePost,
   updateProfileMaterial
@@ -32,6 +34,111 @@ function parseDateTimeLocal(value: FormDataEntryValue | null) {
   }
 
   return new Date(raw).toISOString();
+}
+
+function parseTimeValue(value: string) {
+  const [hour = "09", minute = "00", second = "00"] = value.split(":");
+  return {
+    hour: Number.parseInt(hour, 10),
+    minute: Number.parseInt(minute, 10),
+    second: Number.parseInt(second, 10)
+  };
+}
+
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "longOffset"
+  });
+
+  const parts = formatter.formatToParts(date);
+  const read = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return {
+    year: Number.parseInt(read("year"), 10),
+    month: Number.parseInt(read("month"), 10),
+    day: Number.parseInt(read("day"), 10),
+    hour: Number.parseInt(read("hour"), 10),
+    minute: Number.parseInt(read("minute"), 10),
+    second: Number.parseInt(read("second"), 10),
+    offsetLabel: read("timeZoneName")
+  };
+}
+
+function getOffsetMinutes(date: Date, timeZone: string) {
+  const { offsetLabel } = getTimeZoneParts(date, timeZone);
+  const matched = offsetLabel.match(/GMT([+-])(\d{2}):?(\d{2})/u);
+
+  if (!matched) {
+    return 0;
+  }
+
+  const [, sign, hours, minutes] = matched;
+  const absoluteMinutes =
+    Number.parseInt(hours, 10) * 60 + Number.parseInt(minutes, 10);
+
+  return sign === "-" ? -absoluteMinutes : absoluteMinutes;
+}
+
+function toUtcFromTimeZone(input: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  timeZone: string;
+}) {
+  const utcGuess = Date.UTC(
+    input.year,
+    input.month - 1,
+    input.day,
+    input.hour,
+    input.minute,
+    input.second
+  );
+  const offsetMinutes = getOffsetMinutes(new Date(utcGuess), input.timeZone);
+
+  return new Date(utcGuess - offsetMinutes * 60_000);
+}
+
+function addDaysToDateParts(
+  input: { year: number; month: number; day: number },
+  dayOffset: number
+) {
+  const date = new Date(Date.UTC(input.year, input.month - 1, input.day));
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate()
+  };
+}
+
+async function buildTomorrowScheduledIso() {
+  const settings = await fetchAiSettings();
+  const currentParts = getTimeZoneParts(new Date(), settings.timezone);
+  const tomorrow = addDaysToDateParts(currentParts, 1);
+  const timeValue = parseTimeValue(settings.default_post_time);
+
+  return toUtcFromTimeZone({
+    year: tomorrow.year,
+    month: tomorrow.month,
+    day: tomorrow.day,
+    hour: timeValue.hour,
+    minute: timeValue.minute,
+    second: timeValue.second,
+    timeZone: settings.timezone
+  }).toISOString();
 }
 
 export async function createProfileMaterialAction(formData: FormData) {
@@ -116,6 +223,51 @@ export async function regeneratePostAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/calendar");
+  revalidatePath("/library");
+}
+
+export async function reusePostAsDraftAction(formData: FormData) {
+  await reusePost(String(formData.get("id")), {
+    status: "draft"
+  });
+
+  revalidatePath("/library");
+  revalidatePath("/");
+  revalidatePath("/calendar");
+}
+
+export async function reusePostForTomorrowAction(formData: FormData) {
+  const scheduledAt = await buildTomorrowScheduledIso();
+
+  await reusePost(String(formData.get("id")), {
+    status: "scheduled",
+    scheduledAt
+  });
+
+  revalidatePath("/library");
+  revalidatePath("/");
+  revalidatePath("/calendar");
+}
+
+export async function rescheduleCalendarPostAction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const scheduledAt = String(formData.get("scheduledAt") ?? "").trim();
+
+  await updatePost(id, {
+    scheduledAt: scheduledAt || null,
+    status: "scheduled"
+  });
+
+  revalidatePath("/calendar");
+  revalidatePath("/");
+  revalidatePath("/library");
+}
+
+export async function syncThreadsInsightsAction() {
+  await syncThreadsInsights();
+
+  revalidatePath("/");
+  revalidatePath("/settings/threads");
   revalidatePath("/library");
 }
 

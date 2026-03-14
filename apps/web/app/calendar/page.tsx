@@ -1,82 +1,149 @@
 import { AppShell } from "../../components/app-shell";
-import { formatDateTime } from "../../components/date";
-import { EmptyState } from "../../components/empty-state";
+import { CalendarMonthBoard } from "../../components/calendar-month-board";
 import { ErrorPanel } from "../../components/error-panel";
-import { StatusBadge } from "../../components/status-badge";
-import { ThreadPreview } from "../../components/thread-preview";
-import { fetchPosts } from "../../lib/api";
-import { splitStoredThreadContent } from "../../lib/thread-content";
+import { fetchAiSettings, fetchPosts } from "../../lib/api";
+import { rescheduleCalendarPostAction } from "../actions";
 
-export default async function CalendarPage() {
+type CalendarPageProps = {
+  searchParams?: {
+    month?: string;
+  };
+};
+
+function formatDateKey(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function getMonthSeed(monthParam?: string) {
+  if (monthParam && /^\d{4}-\d{2}$/u.test(monthParam)) {
+    const [year, month] = monthParam.split("-").map(Number);
+    return new Date(Date.UTC(year, (month ?? 1) - 1, 1));
+  }
+
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+function getAdjacentMonth(monthSeed: Date, offset: number) {
+  return new Date(
+    Date.UTC(monthSeed.getUTCFullYear(), monthSeed.getUTCMonth() + offset, 1)
+  );
+}
+
+function buildMonthCells(monthSeed: Date, timeZone: string) {
+  const monthStart = new Date(monthSeed);
+  const firstDay = monthStart.getUTCDay();
+  const mondayStartOffset = firstDay === 0 ? -6 : 1 - firstDay;
+  const gridStart = new Date(monthStart);
+  gridStart.setUTCDate(monthStart.getUTCDate() + mondayStartOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setUTCDate(gridStart.getUTCDate() + index);
+
+    return {
+      date,
+      dateKey: formatDateKey(date, timeZone),
+      dayNumber: Number(
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          day: "2-digit"
+        }).format(date)
+      ),
+      inMonth:
+        date.getUTCMonth() === monthSeed.getUTCMonth() &&
+        date.getUTCFullYear() === monthSeed.getUTCFullYear()
+    };
+  });
+}
+
+export default async function CalendarPage({
+  searchParams
+}: CalendarPageProps) {
   try {
-    const posts = await fetchPosts({ limit: 60 });
+    const settings = await fetchAiSettings();
+    const posts = await fetchPosts({ limit: 120 });
+    const monthSeed = getMonthSeed(searchParams?.month);
+    const previousMonth = getAdjacentMonth(monthSeed, -1);
+    const nextMonth = getAdjacentMonth(monthSeed, 1);
+    const cells = buildMonthCells(monthSeed, settings.timezone);
 
-    const groups = posts.reduce<Record<string, typeof posts>>(
-      (accumulator, post) => {
-        const key = post.scheduled_at
-          ? new Date(post.scheduled_at).toISOString().slice(0, 10)
-          : "미정";
-        accumulator[key] = accumulator[key] ?? [];
-        accumulator[key].push(post);
-        return accumulator;
-      },
-      {}
-    );
+    const scheduledPosts = posts
+      .filter((post) => post.scheduled_at)
+      .map((post) => ({
+        id: post.id,
+        title: post.source_snapshot?.title ?? "제목 없음",
+        status: post.status,
+        scheduledAt: post.scheduled_at,
+        dateKey: formatDateKey(new Date(post.scheduled_at!), settings.timezone)
+      }));
+
+    const monthCells = cells.map((cell) => ({
+      key: cell.date.toISOString(),
+      dateKey: cell.dateKey,
+      dayNumber: cell.dayNumber,
+      inMonth: cell.inMonth,
+      posts: scheduledPosts
+        .filter((post) => post.dateKey === cell.dateKey)
+        .map((post) => ({
+          id: post.id,
+          title: post.title,
+          status: post.status,
+          scheduledAt: post.scheduledAt
+        }))
+    }));
+
+    const unscheduledPosts = posts
+      .filter((post) => !post.scheduled_at && post.status !== "published")
+      .map((post) => ({
+        id: post.id,
+        title: post.source_snapshot?.title ?? "제목 없음",
+        status: post.status,
+        scheduledAt: post.scheduled_at
+      }));
+
+    const monthLabel = new Intl.DateTimeFormat("ko-KR", {
+      timeZone: settings.timezone,
+      year: "numeric",
+      month: "long"
+    }).format(monthSeed);
 
     return (
       <AppShell
         pathname="/calendar"
         title="콘텐츠 캘린더"
-        description="게시 예정, 완료, 실패 상태를 날짜 기준으로 확인하고 스케줄 흐름을 추적합니다."
+        description="월간 일정 보드에서 게시 흐름을 보고, 글 카드를 드래그해서 날짜를 옮길 수 있습니다."
       >
-        {posts.length === 0 ? (
-          <EmptyState
-            title="아직 예정된 글이 없습니다"
-            copy="홈에서 초안을 생성하면 이 화면에서 일정 흐름을 확인할 수 있습니다."
-          />
-        ) : (
-          <div className="grid">
-            {Object.entries(groups).map(([day, items]) => (
-              <section className="card" key={day}>
-                <div className="item-head">
-                  <div>
-                    <h2 className="card-title">
-                      {day === "미정" ? "게시일 미정" : day}
-                    </h2>
-                    <p className="card-copy">
-                      {items.length}개의 글이 연결되어 있습니다.
-                    </p>
-                  </div>
-                </div>
-                <div className="list">
-                  {items.map((post) => (
-                    <article className="item" key={post.id}>
-                      <div className="item-head">
-                        <div>
-                          <strong>
-                            {post.source_snapshot?.title ?? "제목 없음"}
-                          </strong>
-                          <div className="item-meta">
-                            <span>{formatDateTime(post.scheduled_at)}</span>
-                            <span>{post.ai_provider}</span>
-                            <span>{post.ai_model}</span>
-                          </div>
-                        </div>
-                        <StatusBadge status={post.status} />
-                      </div>
-                      <ThreadPreview
-                        segments={splitStoredThreadContent(
-                          post.edited_content ?? post.generated_content,
-                          post.generation_notes?.thread_segments ?? []
-                        )}
-                      />
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
+        <div className="actions" style={{ marginBottom: "1rem" }}>
+          <a
+            className="button-secondary"
+            href={`/calendar?month=${formatDateKey(previousMonth, "UTC").slice(0, 7)}`}
+          >
+            이전 달
+          </a>
+          <a className="button-secondary" href="/calendar">
+            이번 달
+          </a>
+          <a
+            className="button-secondary"
+            href={`/calendar?month=${formatDateKey(nextMonth, "UTC").slice(0, 7)}`}
+          >
+            다음 달
+          </a>
+        </div>
+
+        <CalendarMonthBoard
+          cells={monthCells}
+          monthLabel={monthLabel}
+          onReschedule={rescheduleCalendarPostAction}
+          timezoneLabel={settings.timezone}
+          unscheduledPosts={unscheduledPosts}
+        />
       </AppShell>
     );
   } catch (error) {

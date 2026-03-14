@@ -206,3 +206,56 @@ export async function getCurrentThreadsUser(accessToken: string) {
 
   return parseJsonResponse(response);
 }
+
+function buildMetricUrl(path: string, metrics: string[]) {
+  const params = new URLSearchParams({
+    metric: metrics.join(",")
+  });
+
+  return `${threadsApiBaseUrl}/${path}?${params.toString()}`;
+}
+
+export async function getThreadsUserInsights(
+  accessToken: string,
+  metrics = [
+    "views",
+    "likes",
+    "replies",
+    "reposts",
+    "quotes",
+    "followers_count"
+  ]
+) {
+  const response = await fetch(buildMetricUrl("me/threads_insights", metrics), {
+    signal: AbortSignal.timeout(15_000),
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  return parseJsonResponse(response);
+}
+
+export async function getThreadsMediaInsights({
+  accessToken,
+  threadId,
+  metrics = ["views", "likes", "replies", "reposts", "quotes"]
+}: {
+  accessToken: string;
+  threadId: string;
+  metrics?: string[];
+}) {
+  const response = await fetch(
+    buildMetricUrl(`${threadId}/insights`, metrics),
+    {
+      signal: AbortSignal.timeout(15_000),
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+
+  return parseJsonResponse(response);
+}

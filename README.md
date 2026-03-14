@@ -74,7 +74,11 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - `PT-55` `[BE] 이어쓰기형 Threads 생성·저장·게시 파이프라인 구현`
   - `PT-56` `[BE] 전면 코드 검토 및 리팩토링`
   - `PT-57` `[BE] Threads reply 게시 재시도 및 부분 성공 상태 저장 보강`
-- Next planned executable task: `PT-40` Threads 인사이트 수집 및 저장 구현
+  - `PT-39` `[UI] 월간 캘린더 및 드래그앤드롭 일정 조정 구현`
+  - `PT-40` `[BE] Threads 인사이트 수집 및 저장 구현`
+  - `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화`
+  - `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강`
+- Next planned executable task: `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
 
 ## Work Status
 
@@ -113,6 +117,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - end-to-end production validation for draft generation, Telegram preview, and real Threads publishing
   - Threads 500-character publish-safety enforcement in draft finalization
   - threaded publish stabilization with reply publish retries and shared thread preview rendering on web surfaces
+  - monthly drag-and-drop calendar board for schedule movement
+  - Threads insights summary/sync endpoints and dashboard/library consumption
+  - library reuse actions for cloning a post into a new draft or next-day schedule
 - Next executable tasks:
   - `PT-40` Threads 인사이트 수집 및 저장 구현
   - `PT-41` 홈 성과 요약 및 원재료 차트 고도화
@@ -132,6 +139,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - Anthropic live draft generation has been verified
   - Telegram preview delivery has been verified
   - Threads real publishing has been verified
+  - Insights summary endpoints are implemented, but live sync still requires applying `0004_threads_insights.sql`
 
 ## UI Approval Queue
 
@@ -139,9 +147,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
-- 마지막 완료 작업: `PT-57` Threads reply 게시 재시도 및 부분 성공 상태 저장 보강
-- 다음 작업: `PT-40` Threads 인사이트 수집 및 저장 구현
-- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. MVP 운영 필수 항목은 검증 완료됐고, 이제 남은 작업은 분석/캘린더/라이브러리 고도화 같은 후순위 확장 기능입니다.
+- 마지막 완료 작업: `PT-42` 라이브러리 재사용 액션 및 확장 운영 기능 보강
+- 다음 작업: `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 후순위 확장 코드까지 반영됐고, 남은 실제 작업은 Supabase에 `0004_threads_insights.sql`을 적용해 live insight sync를 검증하는 운영 단계입니다.
 - UI 승인 대기: 없음
 - 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 

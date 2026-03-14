@@ -274,6 +274,10 @@ button:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .card {
   background: var(--paper);
   border: 1px solid rgba(255, 255, 255, 0.5);
@@ -387,6 +391,10 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.actions form {
+  margin: 0;
+}
+
 .button-primary {
   background: var(--accent);
   color: white;
@@ -452,6 +460,82 @@ button:hover {
   color: var(--muted);
 }
 
+.bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(31, 29, 26, 0.08);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #e6a06b);
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.month-grid-head {
+  padding: 0.45rem 0.25rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.month-cell {
+  min-height: 160px;
+  padding: 0.85rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(31, 29, 26, 0.08);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.month-cell.droppable {
+  outline: 1px dashed rgba(207, 95, 52, 0.4);
+}
+
+.muted-cell {
+  opacity: 0.62;
+}
+
+.month-cell-day {
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.month-cell-posts {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mini-post-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mini-post {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 29, 26, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.mini-post.draggable {
+  cursor: grab;
+}
+
 @media (max-width: 1080px) {
   .shell {
     grid-template-columns: 1fr;
@@ -466,6 +550,7 @@ button:hover {
 
   .grid.two,
   .grid.three,
+  .grid.four,
   .form-grid.two {
     grid-template-columns: 1fr;
   }
@@ -482,5 +567,9 @@ button:hover {
 
   .card {
     padding: 1rem;
+  }
+
+  .month-grid {
+    grid-template-columns: 1fr;
   }
 }

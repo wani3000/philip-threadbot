@@ -4,9 +4,10 @@ import { EmptyState } from "../../components/empty-state";
 import { ErrorPanel } from "../../components/error-panel";
 import { StatusBadge } from "../../components/status-badge";
 import { ThreadPreview } from "../../components/thread-preview";
-import { fetchPosts } from "../../lib/api";
+import { fetchPosts, fetchThreadsInsightsSummary } from "../../lib/api";
 import { getProfileCategoryLabel } from "../../lib/profile-categories";
 import { splitStoredThreadContent } from "../../lib/thread-content";
+import { reusePostAsDraftAction, reusePostForTomorrowAction } from "../actions";
 
 type LibraryPageProps = {
   searchParams?: {
@@ -19,7 +20,10 @@ type LibraryPageProps = {
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   try {
-    const posts = await fetchPosts({ limit: 100 });
+    const [posts, insights] = await Promise.all([
+      fetchPosts({ limit: 100 }),
+      fetchThreadsInsightsSummary()
+    ]);
     const keyword = searchParams?.q?.trim().toLowerCase() ?? "";
     const statusFilter = searchParams?.status?.trim() ?? "";
     const categoryFilter = searchParams?.category?.trim() ?? "";
@@ -58,6 +62,9 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       )
     );
     const models = Array.from(new Set(posts.map((post) => post.ai_model)));
+    const insightByPostId = new Map(
+      insights.latestPosts.map((post) => [post.postId, post])
+    );
 
     return (
       <AppShell
@@ -175,6 +182,22 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                         post.generation_notes?.thread_segments ?? []
                       )}
                     />
+                    {insightByPostId.has(post.id) ? (
+                      <div
+                        className="item-meta"
+                        style={{ marginTop: "0.75rem" }}
+                      >
+                        <span>
+                          조회수 {insightByPostId.get(post.id)?.views ?? 0}
+                        </span>
+                        <span>
+                          반응 {insightByPostId.get(post.id)?.engagement ?? 0}
+                        </span>
+                        <span>
+                          답글 {insightByPostId.get(post.id)?.replies ?? 0}
+                        </span>
+                      </div>
+                    ) : null}
                     {!!post.source_snapshot?.tags?.length && (
                       <div className="tag-row">
                         {post.source_snapshot.tags.map((tag) => (
@@ -184,6 +207,30 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                         ))}
                       </div>
                     )}
+                    <div className="actions">
+                      <form action={reusePostAsDraftAction}>
+                        <input name="id" type="hidden" value={post.id} />
+                        <button className="button-secondary" type="submit">
+                          새 초안으로 재사용
+                        </button>
+                      </form>
+                      <form action={reusePostForTomorrowAction}>
+                        <input name="id" type="hidden" value={post.id} />
+                        <button className="button-primary" type="submit">
+                          내일 일정으로 복제
+                        </button>
+                      </form>
+                      {post.thread_permalink ? (
+                        <a
+                          className="button-secondary"
+                          href={post.thread_permalink}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          게시 글 열기
+                        </a>
+                      ) : null}
+                    </div>
                   </article>
                 ))}
               </div>

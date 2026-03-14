@@ -4,11 +4,17 @@ import { generateDraftFromProfile } from "../lib/draft-pipeline";
 import { asyncHandler } from "../lib/http/async-handler";
 import { ProfileMaterialCategory } from "../lib/profile-material/categories";
 import { createSupabaseAdminClient } from "../lib/supabase";
-import { getDemoPost, listDemoPosts, updateDemoPost } from "../lib/demo-store";
+import {
+  duplicateDemoPost,
+  getDemoPost,
+  listDemoPosts,
+  updateDemoPost
+} from "../lib/demo-store";
 import { isDemoModeEnabled } from "../lib/runtime";
 import {
   listPostsQuerySchema,
   regeneratePostSchema,
+  reusePostSchema,
   updatePostSchema
 } from "../lib/validation/posts";
 import { AuthenticatedRequest, requireAdminAuth } from "../middleware/auth";
@@ -125,6 +131,95 @@ postsRouter.patch(
       }
     });
     response.json(data);
+  })
+);
+
+postsRouter.post(
+  "/:id/reuse",
+  asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const postId = getRouteParam(request.params.id);
+    const input = reusePostSchema.parse(request.body);
+
+    if (isDemoModeEnabled()) {
+      const duplicated = duplicateDemoPost({
+        postId,
+        scheduledAt: input.scheduledAt,
+        status: input.status
+      });
+
+      await recordAuditEvent({
+        action: "post.reused",
+        entityType: "post",
+        entityId: duplicated.id,
+        actorType: "admin",
+        actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+        requestId: request.requestId,
+        metadata: {
+          sourcePostId: postId,
+          status: duplicated.status,
+          scheduledAt: duplicated.scheduled_at
+        }
+      });
+
+      response.status(201).json(duplicated);
+      return;
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const { data: existingPost, error: existingError } = await supabase
+      .from("posts")
+      .select(
+        "profile_id, source_snapshot, raw_content, generated_content, edited_content, ai_provider, ai_model, generation_notes"
+      )
+      .eq("id", postId)
+      .single();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    const { data: duplicated, error: insertError } = await supabase
+      .from("posts")
+      .insert({
+        profile_id: existingPost.profile_id,
+        source_snapshot: existingPost.source_snapshot,
+        raw_content: existingPost.raw_content,
+        generated_content: existingPost.generated_content,
+        edited_content: existingPost.edited_content,
+        ai_provider: existingPost.ai_provider,
+        ai_model: existingPost.ai_model,
+        status: input.status,
+        scheduled_at:
+          input.status === "scheduled" ? (input.scheduledAt ?? null) : null,
+        publish_status: "pending",
+        generation_notes: {
+          ...(existingPost.generation_notes ?? {}),
+          reusedFromPostId: postId,
+          reusedAt: new Date().toISOString()
+        }
+      })
+      .select("*")
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    await recordAuditEvent({
+      action: "post.reused",
+      entityType: "post",
+      entityId: duplicated.id,
+      actorType: "admin",
+      actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+      requestId: request.requestId,
+      metadata: {
+        sourcePostId: postId,
+        status: duplicated.status,
+        scheduledAt: duplicated.scheduled_at
+      }
+    });
+
+    response.status(201).json(duplicated);
   })
 );
 

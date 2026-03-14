@@ -88,6 +88,58 @@ export type ThreadsStatus = {
   profileUrl: string | null;
 };
 
+export type ThreadsInsightsSummary = {
+  lastSyncedAt: string | null;
+  account: {
+    views: number;
+    likes: number;
+    replies: number;
+    reposts: number;
+    quotes: number;
+    followersCount: number;
+  } | null;
+  summary: {
+    publishedPostCount: number;
+    trackedPostCount: number;
+    recentViewTotal: number;
+    recentEngagementTotal: number;
+    averageEngagementRate: number;
+  };
+  latestPosts: Array<{
+    postId: string;
+    title: string;
+    category: string | null;
+    permalink: string | null;
+    publishedAt: string | null;
+    views: number;
+    likes: number;
+    replies: number;
+    reposts: number;
+    quotes: number;
+    engagement: number;
+  }>;
+  topPosts: Array<{
+    postId: string;
+    title: string;
+    category: string | null;
+    permalink: string | null;
+    publishedAt: string | null;
+    views: number;
+    likes: number;
+    replies: number;
+    reposts: number;
+    quotes: number;
+    engagement: number;
+  }>;
+  categoryBreakdown: Array<{
+    category: string;
+    postCount: number;
+    materialCount: number;
+    totalViews: number;
+    totalEngagement: number;
+  }>;
+};
+
 export type OperationalReadiness = {
   mode: "demo" | "live";
   overallStatus: "ready" | "warning" | "blocked";
@@ -184,6 +236,23 @@ export async function fetchThreadsStatus() {
   return apiRequest<ThreadsStatus>("/integrations/threads/status");
 }
 
+export async function fetchThreadsInsightsSummary() {
+  return apiRequest<ThreadsInsightsSummary>(
+    "/integrations/threads/insights/summary"
+  );
+}
+
+export async function syncThreadsInsights() {
+  return apiRequest<{
+    syncedAt: string;
+    syncedAccount: boolean;
+    syncedPosts: number;
+  }>("/integrations/threads/insights/sync", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
+}
+
 export async function fetchOperationalReadiness() {
   return apiRequest<OperationalReadiness>("/admin/readiness");
 }
@@ -272,6 +341,19 @@ export async function regeneratePost(
   input?: { provider?: string; model?: string }
 ) {
   return apiRequest(`/api/posts/${id}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify(input ?? {})
+  });
+}
+
+export async function reusePost(
+  id: string,
+  input?: {
+    scheduledAt?: string | null;
+    status?: "draft" | "scheduled";
+  }
+) {
+  return apiRequest<PostRecord>(`/api/posts/${id}/reuse`, {
     method: "POST",
     body: JSON.stringify(input ?? {})
   });

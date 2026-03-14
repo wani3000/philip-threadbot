@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Router } from "express";
-import { requireAdminAuth } from "../../middleware/auth";
+import { AuthenticatedRequest, requireAdminAuth } from "../../middleware/auth";
 import {
   createTextThread,
   exchangeCodeForShortLivedToken,
@@ -13,6 +13,10 @@ import { env } from "../../config/env";
 import { asyncHandler } from "../../lib/http/async-handler";
 import { recordAuditEvent } from "../../lib/audit";
 import { RequestWithContext } from "../../middleware/request-context";
+import {
+  getThreadsInsightsSummary,
+  syncThreadsInsights
+} from "../../lib/threads-insights";
 
 const threadsRouter = Router();
 
@@ -162,6 +166,35 @@ threadsRouter.get(
         ? `https://www.threads.com/@${profile.username}`
         : null
     });
+  })
+);
+
+threadsRouter.get(
+  "/insights/summary",
+  requireAdminAuth,
+  asyncHandler(async (_request, response) => {
+    const summary = await getThreadsInsightsSummary();
+
+    response.json(summary);
+  })
+);
+
+threadsRouter.post(
+  "/insights/sync",
+  requireAdminAuth,
+  asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const result = await syncThreadsInsights();
+
+    await recordAuditEvent({
+      action: "threads.insights_synced",
+      entityType: "threads_insights",
+      actorType: "admin",
+      actorIdentifier: request.adminUser?.email ?? "unknown-admin",
+      requestId: request.requestId,
+      metadata: result
+    });
+
+    response.status(201).json(result);
   })
 );
 
