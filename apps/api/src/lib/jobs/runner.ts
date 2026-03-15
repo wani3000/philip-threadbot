@@ -381,16 +381,13 @@ async function rescheduleScheduledPost(input: {
   }
 }
 
-async function fetchTomorrowPreviewPosts(baseDate?: string) {
+async function fetchNextPreviewPost(baseDate?: string) {
   const settings = isDemoModeEnabled()
     ? getDemoAiSettings()
     : await getDefaultAiSettings();
-  const timeZone = settings?.timezone ?? env.TIMEZONE;
-  const targetDateKey = buildDateKey({
-    date: baseDate ?? new Date().toISOString(),
-    timeZone,
-    dayOffset: 1
-  });
+  const nowIso = baseDate
+    ? new Date(baseDate).toISOString()
+    : new Date().toISOString();
 
   const posts = isDemoModeEnabled()
     ? listDemoPosts({
@@ -416,18 +413,11 @@ async function fetchTomorrowPreviewPosts(baseDate?: string) {
 
   return {
     settings,
-    items: posts.filter((post) => {
-      if (!post.scheduled_at) {
-        return false;
-      }
-
-      return (
-        buildDateKey({
-          date: post.scheduled_at,
-          timeZone
-        }) === targetDateKey
-      );
-    })
+    item:
+      posts.find(
+        (post) =>
+          Boolean(post.scheduled_at) && (post.scheduled_at ?? "") >= nowIso
+      ) ?? null
   };
 }
 
@@ -674,16 +664,16 @@ async function executeGenerateDailyDraft(baseDate?: string) {
 }
 
 async function executeSendDailyTelegram(baseDate?: string) {
-  const { settings, items } = await fetchTomorrowPreviewPosts(baseDate);
-  const firstPost = items[0];
+  const { settings, item } = await fetchNextPreviewPost(baseDate);
+  const firstPost = item;
 
   if (!firstPost) {
     logger.info("job.send_daily_telegram.skipped", {
-      reason: "no_scheduled_post_for_tomorrow"
+      reason: "no_upcoming_scheduled_post"
     });
     return {
       delivered: false,
-      reason: "no_scheduled_post_for_tomorrow"
+      reason: "no_upcoming_scheduled_post"
     };
   }
 

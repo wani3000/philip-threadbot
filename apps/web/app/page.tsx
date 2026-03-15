@@ -44,25 +44,40 @@ export default async function HomePage() {
     const upcomingRange = getUpcomingRange(plannedWindowDays);
     const webAuthReady = hasSupabaseAuthConfig();
 
-    const [materials, upcomingPosts, settings, auditLogs, readiness, insights] =
-      await Promise.all([
-        fetchProfileMaterials(),
-        fetchPosts({
-          dateFrom: upcomingRange.start,
-          dateTo: upcomingRange.end,
-          limit: 40
-        }),
-        fetchAiSettings(),
-        fetchAuditLogs(),
-        fetchOperationalReadiness(),
-        fetchThreadsInsightsSummary()
-      ]);
+    const [
+      materials,
+      allPosts,
+      upcomingPosts,
+      settings,
+      auditLogs,
+      readiness,
+      insights
+    ] = await Promise.all([
+      fetchProfileMaterials(),
+      fetchPosts({
+        limit: 200
+      }),
+      fetchPosts({
+        dateFrom: upcomingRange.start,
+        dateTo: upcomingRange.end,
+        limit: 40
+      }),
+      fetchAiSettings(),
+      fetchAuditLogs(),
+      fetchOperationalReadiness(),
+      fetchThreadsInsightsSummary()
+    ]);
 
-    const schedulableStatuses = new Set(["approved", "scheduled", "published"]);
+    const plannedStatuses = new Set(["approved", "scheduled"]);
     const scheduledPosts = upcomingPosts.filter(
-      (post) => post.scheduled_at && schedulableStatuses.has(post.status)
+      (post) => post.scheduled_at && plannedStatuses.has(post.status)
     );
-    const nextScheduledPost = scheduledPosts[0];
+    const nextScheduledPost = allPosts.find(
+      (post) =>
+        Boolean(post.scheduled_at) &&
+        (post.scheduled_at ?? "") >= upcomingRange.start &&
+        plannedStatuses.has(post.status)
+    );
     const nextScheduledThreadSegments = nextScheduledPost
       ? splitStoredThreadContent(
           nextScheduledPost.edited_content ??
