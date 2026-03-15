@@ -7,8 +7,10 @@ import { isDemoModeEnabled } from "./runtime";
 import { env } from "../config/env";
 import {
   getThreadsMediaInsights,
-  getThreadsUserInsights
+  getThreadsUserInsights,
+  ThreadsApiError
 } from "./threads/client";
+import { logger } from "./logger";
 
 type InsightMetricPayload = {
   name?: string;
@@ -119,6 +121,25 @@ function isMissingInsightsTableError(error: unknown) {
     /threads_(account|post)_insights_snapshots|relation .* does not exist|schema cache/iu.test(
       message
     )
+  );
+}
+
+function isUnsupportedThreadsMediaError(error: unknown) {
+  if (!(error instanceof ThreadsApiError)) {
+    return false;
+  }
+
+  const payload = error.payload as {
+    error?: {
+      code?: number;
+      error_subcode?: number;
+    };
+  };
+
+  return (
+    error.status === 400 &&
+    payload.error?.code === 100 &&
+    payload.error?.error_subcode === 33
   );
 }
 
@@ -316,16 +337,29 @@ export async function syncThreadsInsights(limit = 12) {
         continue;
       }
 
-      const payload = await getThreadsMediaInsights({
-        accessToken: env.THREADS_ACCESS_TOKEN,
-        threadId: post.thread_id
-      });
-      postSnapshots.push({
-        postId: post.id,
-        threadsMediaId: post.thread_id,
-        metrics: normalizeInsightMetrics(payload),
-        rawPayload: payload as Record<string, unknown>
-      });
+      try {
+        const payload = await getThreadsMediaInsights({
+          accessToken: env.THREADS_ACCESS_TOKEN,
+          threadId: post.thread_id
+        });
+        postSnapshots.push({
+          postId: post.id,
+          threadsMediaId: post.thread_id,
+          metrics: normalizeInsightMetrics(payload),
+          rawPayload: payload as Record<string, unknown>
+        });
+      } catch (error) {
+        if (isUnsupportedThreadsMediaError(error)) {
+          logger.warn("threads.insights.post_skipped", {
+            postId: post.id,
+            threadId: post.thread_id,
+            reason: "unsupported_media_lookup"
+          });
+          continue;
+        }
+
+        throw error;
+      }
     }
 
     await insertPostSnapshots(postSnapshots);

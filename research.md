@@ -280,8 +280,10 @@ Implemented:
 Important technical fact:
 
 - if the new tables are not present yet, summary calls now return a safe empty payload so the dashboard still renders
-- actual live syncing still requires the migration to be applied in Supabase production
-- this remaining activation step is tracked separately in Jira as `PT-58`
+- the production migration has now been applied and live account-level insight syncing is verified
+- current legacy published posts can still fail per-post insights lookup with Threads `400 / code 100 / subcode 33`
+- the sync path now skips those posts safely and logs `threads.insights.post_skipped` instead of failing the job
+- follow-up work for correct media identifier tracking is now tracked in Jira as `PT-59`
 
 ### 4.10 Calendar and library expansion
 
@@ -499,7 +501,7 @@ The remaining endpoints in this section are design targets if they are not liste
 - The generation pipeline now runs on a fixed 7-theme rotation, excludes recently used source material, anonymizes company names, and rejects near-duplicate drafts locally without paying for an extra LLM validation pass.
 - Calendar is now a monthly drag-and-drop board, and library reuse actions schedule the next valid cadence slot rather than blindly cloning for tomorrow.
 - The dashboard’s `다음 게시 예정` card and the Telegram preview job now both resolve the closest upcoming scheduled post rather than assuming the next post must be “tomorrow.”
-- Threads insights endpoints, richer home analytics, and library reuse tooling are implemented in code. The remaining activation step is operational: apply `0004_threads_insights.sql` and verify live sync.
+- Threads insights endpoints, richer home analytics, and library reuse tooling are implemented in code. Production account-level syncing is now verified, while legacy post-level insights remain a narrower follow-up because current stored `thread_id` values are not always accepted by the media insights endpoint.
 - Automated tests beyond format/lint/typecheck/build do not exist yet.
 
 ### 9.2 Product-level risks carried from the planning document
@@ -520,4 +522,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Google admin login, Anthropic-backed draft generation, Telegram preview delivery, real Threads publishing, structured Philip source-material seeding, a multi-post thread workflow, a monthly rescheduling calendar, reusable library actions, and dashboard-facing insight summaries. The MVP launch path is complete and the current operating policy is intentionally low-cost: one thread every two days, fixed theme rotation, recent-material avoidance, and local duplicate rejection without extra LLM validation calls. The remaining roadmap is now narrow: apply `0004_threads_insights.sql` in production and verify live insight sync under `PT-58`.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Google admin login, Anthropic-backed draft generation, Telegram preview delivery, real Threads publishing, structured Philip source-material seeding, a multi-post thread workflow, a monthly rescheduling calendar, reusable library actions, and dashboard-facing insight summaries. The MVP launch path is complete and the current operating policy is intentionally low-cost: one thread every two days, fixed theme rotation, recent-material avoidance, and local duplicate rejection without extra LLM validation calls. The remaining roadmap is now narrow: improve post-level Threads insight fidelity by storing a stable media identifier under `PT-59`.

@@ -649,7 +649,7 @@ Subtasks:
 - `PT-40` `[BE] Threads 인사이트 수집 및 저장 구현` — done
 - `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화` — done
 - `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강` — done
-- `PT-58` `[INFRA] Threads 인사이트 마이그레이션 적용 및 live sync 검증` — pending
+- `PT-58` `[INFRA] Threads 인사이트 마이그레이션 적용 및 live sync 검증` — done
 
 Approach:
 
@@ -671,6 +671,8 @@ Iteration:
   - Theme rotation now starts from topic 1 when there is no prior `theme_key` history, so legacy pre-theme posts do not skew the new sequence.
   - Near-duplicate protection now runs as a local heuristic check against recent posts, and duplicate hits fail fast instead of triggering extra LLM validation/retry cost.
   - Dashboard and Telegram preview alignment now use the same “closest upcoming scheduled post” rule, so the home screen and the preview cron no longer diverge when the next post is more than one day away.
+  - `PT-58` was verified live after applying `0004_threads_insights.sql`; account-level snapshots now sync in production and summary endpoints return real account numbers.
+  - Existing published posts still raise Threads `unsupported media lookup` errors for post-level insights. The sync path now skips those posts safely instead of failing the whole job, and follow-up work moved to `PT-59`.
 
 Todo List:
 
@@ -678,7 +680,29 @@ Todo List:
 - `[x]` `PT-40` Threads insights ingestion and storage — agent: Codex
 - `[x]` `PT-41` home analytics summary and material charts — agent: Codex
 - `[x]` `PT-42` library reuse actions and extended operations tools — agent: Codex
-- `[ ]` `PT-58` apply insights migration and verify live sync — next agent
+- `[x]` `PT-58` apply insights migration and verify live sync — agent: Codex
+
+## PT-59 Threads 게시물 인사이트용 media ID 추적 구조 보강
+
+Subtasks:
+
+- follow-up issue only; no implementation yet
+
+Approach:
+
+- capture or derive a stable Threads media identifier at publish time so per-post insights can be fetched without relying on the current `thread_id` fallback
+
+Iteration:
+
+- 2026-03-15:
+  - live insight sync succeeded at the account level after `0004_threads_insights.sql` was applied
+  - both existing published posts returned Threads `400 / code 100 / subcode 33` on media insights lookup
+  - runtime was hardened to log-and-skip those posts so sync remains usable for dashboards
+  - remaining work is to store the correct media identifier for future posts and backfill or reconcile legacy posts where possible
+
+Todo List:
+
+- `[ ]` `PT-59` design and implement stable media ID tracking for post insights — next agent
 
 ## PT-30 Vercel 무료 배포 및 Google 로그인 준비
 
