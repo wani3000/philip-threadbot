@@ -46,6 +46,7 @@ type StoredPostRecord = {
   } | null;
   generation_notes: {
     thread_segments?: string[];
+    insights_media_ids?: string[];
   } | null;
 };
 
@@ -425,6 +426,7 @@ async function updatePublishedPost(input: {
   id: string;
   threadId: string;
   threadPermalink: string | null;
+  generationNotesPatch?: Record<string, unknown>;
 }) {
   const publishedAt = new Date().toISOString();
 
@@ -439,6 +441,11 @@ async function updatePublishedPost(input: {
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("generation_notes")
+    .eq("id", input.id)
+    .maybeSingle<{ generation_notes?: Record<string, unknown> | null }>();
   const { error } = await supabase
     .from("posts")
     .update({
@@ -446,7 +453,11 @@ async function updatePublishedPost(input: {
       publish_status: "published",
       thread_id: input.threadId,
       thread_permalink: input.threadPermalink,
-      published_at: publishedAt
+      published_at: publishedAt,
+      generation_notes: {
+        ...(existing?.generation_notes ?? {}),
+        ...(input.generationNotesPatch ?? {})
+      }
     })
     .eq("id", input.id);
 
@@ -545,6 +556,17 @@ async function createPublishAttempt(input: {
 
 function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function dedupeStringList(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values.filter(
+        (value): value is string =>
+          typeof value === "string" && value.length > 0
+      )
+    )
+  );
 }
 
 function isThreadsMissingResourceError(error: unknown) {
@@ -871,7 +893,12 @@ async function executePublishScheduledPosts(baseDate?: string) {
       await updatePublishedPost({
         id: post.id,
         threadId: firstPublishResult.id,
-        threadPermalink: firstDetails.permalink ?? null
+        threadPermalink: firstDetails.permalink ?? null,
+        generationNotesPatch: {
+          insights_media_ids: dedupeStringList(
+            replyChain.map((item) => item.threadId)
+          )
+        }
       });
       await createPublishAttempt({
         postId: post.id,

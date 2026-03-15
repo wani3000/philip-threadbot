@@ -126,7 +126,7 @@ Initial setup and the MVP admin surface are now in place. The repository started
 - recent-material exclusion plus local duplicate detection without extra LLM validation calls
 - next-scheduled dashboard card and Telegram preview flow aligned to the same “closest upcoming post” rule
 - Next executable tasks:
-  - `PT-59` Threads 게시물 인사이트용 media ID 추적 구조 보강
+  - 없음
 
 ## Deployment Status
 
@@ -142,7 +142,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - Telegram preview delivery has been verified
   - Threads real publishing has been verified
   - Threads account-level insight snapshots are now syncing in production
-  - Existing published posts may still show zero per-post metrics until dedicated media ID tracking is added under `PT-59`
+  - Threaded published posts now persist `insights_media_ids` and sync per-post snapshots through the insight-friendly media IDs
+  - One older single-post publish may still show zero per-post metrics because Threads does not return an alternative media insights identifier for that legacy post
 
 ## UI Approval Queue
 
@@ -151,8 +152,8 @@ Initial setup and the MVP admin surface are now in place. The repository started
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
 - 마지막 완료 작업: 다음 게시 예정 대시보드·텔레그램 정합성 보강
-- 다음 작업: `PT-59` Threads 게시물 인사이트용 media ID 추적 구조 보강
-- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다. 홈의 `다음 게시 예정` 카드와 텔레그램 미리보기는 모두 같은 “가장 가까운 예약 글” 기준으로 동작합니다. `PT-58` 검증 결과 account-level 인사이트 sync는 정상이며, 기존 게시물의 per-post 인사이트는 Threads API의 unsupported media lookup을 만나면 안전하게 skip되도록 처리했습니다.
+- 다음 작업: 없음
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다. 홈의 `다음 게시 예정` 카드와 텔레그램 미리보기는 모두 같은 “가장 가까운 예약 글” 기준으로 동작합니다. live insights는 account-level과 threaded post-level까지 검증되었습니다. 다만 과거 단일 게시물 1건은 Threads API가 insight-friendly media ID를 주지 않아 per-post 수치가 0으로 남을 수 있습니다.
 - UI 승인 대기: 없음
 - 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 
@@ -186,7 +187,8 @@ The web dashboard now supports Supabase session login and forwards the session a
 - Supabase production 연결과 실DB 마이그레이션도 완료되었습니다.
 - Google 실로그인, Anthropic 실초안 생성, Telegram 전송, Threads 실게시까지 모두 검증 완료되었습니다.
 - Threads account-level insight sync도 production에서 검증 완료되었습니다.
-- 현재 남은 실제 작업은 PT-59의 기존 게시물 media ID 추적 보강입니다.
+- Threaded published post의 insight media ID 추적 구조도 production에서 검증 완료되었습니다.
+- 현재 남은 실제 작업은 없습니다.
 
 ## Commit Convention
 

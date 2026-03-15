@@ -650,6 +650,7 @@ Subtasks:
 - `PT-41` `[FE] 홈 성과 요약 및 원재료 차트 고도화` — done
 - `PT-42` `[FE] 라이브러리 재사용 액션 및 확장 운영 기능 보강` — done
 - `PT-58` `[INFRA] Threads 인사이트 마이그레이션 적용 및 live sync 검증` — done
+- `PT-59` `[BE] Threads 게시물 인사이트용 media ID 추적 구조 보강` — done
 
 Approach:
 
@@ -673,6 +674,8 @@ Iteration:
   - Dashboard and Telegram preview alignment now use the same “closest upcoming scheduled post” rule, so the home screen and the preview cron no longer diverge when the next post is more than one day away.
   - `PT-58` was verified live after applying `0004_threads_insights.sql`; account-level snapshots now sync in production and summary endpoints return real account numbers.
   - Existing published posts still raise Threads `unsupported media lookup` errors for post-level insights. The sync path now skips those posts safely instead of failing the whole job, and follow-up work moved to `PT-59`.
+  - `PT-59` now stores `insights_media_ids` in `generation_notes`, backfills them from successful `publish_attempts`, and aggregates segment-level insights for threaded posts.
+  - Live verification now reports `trackedPostCount = 1` for the existing threaded publish, while one legacy single-post publish remains untracked because Threads does not expose an alternate insights-capable media identifier.
 
 Todo List:
 
@@ -681,16 +684,21 @@ Todo List:
 - `[x]` `PT-41` home analytics summary and material charts — agent: Codex
 - `[x]` `PT-42` library reuse actions and extended operations tools — agent: Codex
 - `[x]` `PT-58` apply insights migration and verify live sync — agent: Codex
+- `[x]` `PT-59` design and implement stable media ID tracking for post insights — agent: Codex
 
 ## PT-59 Threads 게시물 인사이트용 media ID 추적 구조 보강
 
 Subtasks:
 
-- follow-up issue only; no implementation yet
+- `generation_notes`에 `insights_media_ids` 저장
+- 기존 published post는 `publish_attempts` 성공 payload를 읽어 backfill
+- threaded post는 segment별 insights를 aggregate해 post snapshot 1건으로 저장
 
 Approach:
 
-- capture or derive a stable Threads media identifier at publish time so per-post insights can be fetched without relying on the current `thread_id` fallback
+- avoid another schema migration by using the existing `generation_notes` JSON field
+- write all published thread segment IDs at publish time
+- probe candidate IDs during sync, keep only insight-capable IDs, and persist the matched subset for future runs
 
 Iteration:
 
@@ -698,11 +706,13 @@ Iteration:
   - live insight sync succeeded at the account level after `0004_threads_insights.sql` was applied
   - both existing published posts returned Threads `400 / code 100 / subcode 33` on media insights lookup
   - runtime was hardened to log-and-skip those posts so sync remains usable for dashboards
-  - remaining work is to store the correct media identifier for future posts and backfill or reconcile legacy posts where possible
+  - implementation now writes and backfills `insights_media_ids`, then aggregates accessible segment metrics for threaded posts
+  - live verification confirmed `syncedPosts = 1` and `trackedPostCount = 1`
+  - one legacy single post still has no alternate insight-capable ID from Threads, so it remains zero-valued but non-blocking
 
 Todo List:
 
-- `[ ]` `PT-59` design and implement stable media ID tracking for post insights — next agent
+- `[x]` `PT-59` design and implement stable media ID tracking for post insights — agent: Codex
 
 ## PT-30 Vercel 무료 배포 및 Google 로그인 준비
 

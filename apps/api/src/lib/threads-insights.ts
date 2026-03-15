@@ -25,6 +25,9 @@ type PublishedPostRecord = {
   thread_id: string | null;
   thread_permalink: string | null;
   published_at: string | null;
+  generation_notes: {
+    insights_media_ids?: string[];
+  } | null;
   source_snapshot: {
     title?: string;
     category?: string;
@@ -186,7 +189,9 @@ async function fetchPublishedPosts(limit = 24) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, thread_id, thread_permalink, published_at, source_snapshot")
+    .select(
+      "id, thread_id, thread_permalink, published_at, generation_notes, source_snapshot"
+    )
     .eq("status", "published")
     .not("thread_id", "is", null)
     .order("published_at", { ascending: false })
@@ -198,6 +203,166 @@ async function fetchPublishedPosts(limit = 24) {
   }
 
   return data ?? [];
+}
+
+type PublishAttemptLookup = {
+  post_id: string;
+  response_payload: {
+    root?: {
+      publishResult?: { id?: string };
+      details?: { id?: string };
+    };
+    replyChain?: Array<{
+      threadId?: string;
+    }>;
+  } | null;
+  created_at: string;
+};
+
+function dedupeStringList(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values.filter(
+        (value): value is string =>
+          typeof value === "string" && value.length > 0
+      )
+    )
+  );
+}
+
+function extractInsightMediaIdsFromNotes(
+  generationNotes: PublishedPostRecord["generation_notes"]
+) {
+  const rawIds = generationNotes?.insights_media_ids;
+
+  if (!Array.isArray(rawIds)) {
+    return [] as string[];
+  }
+
+  return dedupeStringList(
+    rawIds.map((value) => (typeof value === "string" ? value : null))
+  );
+}
+
+function extractInsightMediaIdsFromPublishAttempt(
+  payload: PublishAttemptLookup["response_payload"]
+) {
+  if (!payload) {
+    return [] as string[];
+  }
+
+  return dedupeStringList([
+    payload.root?.publishResult?.id,
+    payload.root?.details?.id,
+    ...(payload.replyChain ?? []).map((item) => item.threadId)
+  ]);
+}
+
+async function fetchLatestSuccessfulPublishAttempts(postIds: string[]) {
+  if (postIds.length === 0) {
+    return new Map<string, PublishAttemptLookup>();
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("publish_attempts")
+    .select("post_id, response_payload, created_at")
+    .in("post_id", postIds)
+    .eq("success", true)
+    .order("created_at", { ascending: false })
+    .returns<PublishAttemptLookup[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  const latestByPostId = new Map<string, PublishAttemptLookup>();
+
+  for (const attempt of data ?? []) {
+    if (!latestByPostId.has(attempt.post_id)) {
+      latestByPostId.set(attempt.post_id, attempt);
+    }
+  }
+
+  return latestByPostId;
+}
+
+async function persistInsightMediaIds(postId: string, mediaIds: string[]) {
+  if (mediaIds.length === 0) {
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: existing, error: existingError } = await supabase
+    .from("posts")
+    .select("generation_notes")
+    .eq("id", postId)
+    .maybeSingle<{ generation_notes?: Record<string, unknown> | null }>();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  const { error } = await supabase
+    .from("posts")
+    .update({
+      generation_notes: {
+        ...(existing?.generation_notes ?? {}),
+        insights_media_ids: mediaIds
+      }
+    })
+    .eq("id", postId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+function aggregateMetricPayloads(
+  payloads: Array<Record<string, unknown>>
+): Record<string, number | null> {
+  const totals = {
+    views: 0,
+    likes: 0,
+    replies: 0,
+    reposts: 0,
+    quotes: 0
+  };
+
+  for (const payload of payloads) {
+    const metrics = normalizeInsightMetrics(
+      payload as { data?: InsightMetricPayload[] }
+    );
+    totals.views += metrics.views ?? 0;
+    totals.likes += metrics.likes ?? 0;
+    totals.replies += metrics.replies ?? 0;
+    totals.reposts += metrics.reposts ?? 0;
+    totals.quotes += metrics.quotes ?? 0;
+  }
+
+  return totals;
+}
+
+async function resolveInsightMediaIdsForPost(
+  post: PublishedPostRecord,
+  latestAttemptsByPostId: Map<string, PublishAttemptLookup>
+) {
+  const fromNotes = extractInsightMediaIdsFromNotes(post.generation_notes);
+
+  if (fromNotes.length > 0) {
+    return fromNotes;
+  }
+
+  const fromAttempts = extractInsightMediaIdsFromPublishAttempt(
+    latestAttemptsByPostId.get(post.id)?.response_payload ?? null
+  );
+
+  if (fromAttempts.length > 0) {
+    await persistInsightMediaIds(post.id, fromAttempts);
+    return fromAttempts;
+  }
+
+  return dedupeStringList([post.thread_id]);
 }
 
 async function insertAccountSnapshot(snapshot: {
@@ -318,6 +483,9 @@ export async function syncThreadsInsights(limit = 12) {
       env.THREADS_ACCESS_TOKEN
     );
     const accountMetrics = normalizeInsightMetrics(accountPayload);
+    const latestAttemptsByPostId = await fetchLatestSuccessfulPublishAttempts(
+      publishedPosts.map((post) => post.id)
+    );
 
     await insertAccountSnapshot({
       threadsUserId: env.THREADS_USER_ID,
@@ -333,32 +501,78 @@ export async function syncThreadsInsights(limit = 12) {
     }> = [];
 
     for (const post of publishedPosts) {
-      if (!post.thread_id) {
+      const candidateMediaIds = await resolveInsightMediaIdsForPost(
+        post,
+        latestAttemptsByPostId
+      );
+
+      if (candidateMediaIds.length === 0) {
         continue;
       }
 
-      try {
-        const payload = await getThreadsMediaInsights({
-          accessToken: env.THREADS_ACCESS_TOKEN,
-          threadId: post.thread_id
-        });
-        postSnapshots.push({
-          postId: post.id,
-          threadsMediaId: post.thread_id,
-          metrics: normalizeInsightMetrics(payload),
-          rawPayload: payload as Record<string, unknown>
-        });
-      } catch (error) {
-        if (isUnsupportedThreadsMediaError(error)) {
-          logger.warn("threads.insights.post_skipped", {
-            postId: post.id,
-            threadId: post.thread_id,
-            reason: "unsupported_media_lookup"
-          });
-          continue;
-        }
+      const successfulPayloads: Array<{
+        mediaId: string;
+        payload: Record<string, unknown>;
+      }> = [];
 
-        throw error;
+      for (const mediaId of candidateMediaIds) {
+        try {
+          const payload = await getThreadsMediaInsights({
+            accessToken: env.THREADS_ACCESS_TOKEN,
+            threadId: mediaId
+          });
+          successfulPayloads.push({
+            mediaId,
+            payload: payload as Record<string, unknown>
+          });
+        } catch (error) {
+          if (isUnsupportedThreadsMediaError(error)) {
+            logger.warn("threads.insights.media_candidate_skipped", {
+              postId: post.id,
+              threadId: post.thread_id,
+              mediaId,
+              reason: "unsupported_media_lookup"
+            });
+            continue;
+          }
+
+          throw error;
+        }
+      }
+
+      if (successfulPayloads.length === 0) {
+        logger.warn("threads.insights.post_skipped", {
+          postId: post.id,
+          threadId: post.thread_id,
+          candidateMediaIds,
+          reason: "no_supported_media_lookup"
+        });
+        continue;
+      }
+
+      postSnapshots.push({
+        postId: post.id,
+        threadsMediaId: successfulPayloads[0].mediaId,
+        metrics: aggregateMetricPayloads(
+          successfulPayloads.map((item) => item.payload)
+        ),
+        rawPayload: {
+          candidateMediaIds,
+          matchedMediaIds: successfulPayloads.map((item) => item.mediaId),
+          segments: successfulPayloads.map((item) => ({
+            mediaId: item.mediaId,
+            payload: item.payload
+          }))
+        }
+      });
+
+      const matchedIds = successfulPayloads.map((item) => item.mediaId);
+      const existingIds = extractInsightMediaIdsFromNotes(
+        post.generation_notes
+      );
+
+      if (matchedIds.join(",") !== existingIds.join(",")) {
+        await persistInsightMediaIds(post.id, matchedIds);
       }
     }
 
