@@ -670,6 +670,7 @@ Iteration:
   - Library reuse no longer schedules tomorrow blindly; it now finds the next valid cadence slot.
   - Theme rotation now starts from topic 1 when there is no prior `theme_key` history, so legacy pre-theme posts do not skew the new sequence.
   - Near-duplicate protection now runs as a local heuristic check against recent posts, and duplicate hits fail fast instead of triggering extra LLM validation/retry cost.
+  - Dashboard and Telegram preview alignment now use the same “closest upcoming scheduled post” rule, so the home screen and the preview cron no longer diverge when the next post is more than one day away.
 
 Todo List:
 
@@ -972,6 +973,7 @@ Iteration:
   - `ai_settings` 테이블이 비어 있어도 이제 API가 기본 설정을 자동 생성합니다.
   - 새 Supabase 프로젝트에는 Philip 원재료가 총 49건 적재되어 있습니다.
   - 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다.
+  - 홈의 `다음 게시 예정` 카드와 텔레그램 미리보기는 모두 가장 가까운 예약 글을 기준으로 동작합니다.
 - 다음으로 처리해야 할 하위 태스크 번호 및 순서:
   - `PT-58`
 - 막히거나 판단이 필요한 부분:

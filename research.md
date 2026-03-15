@@ -498,6 +498,7 @@ The remaining endpoints in this section are design targets if they are not liste
 - Threads publishing now also enforces the operating cadence at publish time, rescheduling overflow posts instead of sending multiple same-day publishes.
 - The generation pipeline now runs on a fixed 7-theme rotation, excludes recently used source material, anonymizes company names, and rejects near-duplicate drafts locally without paying for an extra LLM validation pass.
 - Calendar is now a monthly drag-and-drop board, and library reuse actions schedule the next valid cadence slot rather than blindly cloning for tomorrow.
+- The dashboard’s `다음 게시 예정` card and the Telegram preview job now both resolve the closest upcoming scheduled post rather than assuming the next post must be “tomorrow.”
 - Threads insights endpoints, richer home analytics, and library reuse tooling are implemented in code. The remaining activation step is operational: apply `0004_threads_insights.sql` and verify live sync.
 - Automated tests beyond format/lint/typecheck/build do not exist yet.
 

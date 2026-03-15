@@ -120,10 +120,11 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - threaded publish stabilization with reply publish retries and shared thread preview rendering on web surfaces
   - monthly drag-and-drop calendar board for schedule movement
   - Threads insights summary/sync endpoints and dashboard/library consumption
-  - library reuse actions for cloning a post into a new draft or the next 2-day cadence slot
-  - 7-theme fixed rotation for content generation
-  - every-other-day publish cadence enforced at generation time, library reuse time, and publish time
-  - recent-material exclusion plus local duplicate detection without extra LLM validation calls
+- library reuse actions for cloning a post into a new draft or the next 2-day cadence slot
+- 7-theme fixed rotation for content generation
+- every-other-day publish cadence enforced at generation time, library reuse time, and publish time
+- recent-material exclusion plus local duplicate detection without extra LLM validation calls
+ - next-scheduled dashboard card and Telegram preview flow aligned to the same “closest upcoming post” rule
 - Next executable tasks:
   - `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
 
@@ -148,9 +149,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
-- 마지막 완료 작업: 운영 cadence 강제, 주제 순환, 저비용 중복 검사 보강
+- 마지막 완료 작업: 다음 게시 예정 대시보드·텔레그램 정합성 보강
 - 다음 작업: `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
-- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다. 남은 실제 작업은 Supabase에 `0004_threads_insights.sql`을 적용해 live insight sync를 검증하는 운영 단계입니다.
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다. 홈의 `다음 게시 예정` 카드와 텔레그램 미리보기는 이제 모두 같은 “가장 가까운 예약 글” 기준으로 동작합니다. 남은 실제 작업은 Supabase에 `0004_threads_insights.sql`을 적용해 live insight sync를 검증하는 운영 단계입니다.
 - UI 승인 대기: 없음
 - 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 
