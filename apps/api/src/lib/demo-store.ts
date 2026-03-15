@@ -4,6 +4,7 @@ import {
   DraftPipelineInput,
   ProfileMaterialRecord
 } from "./draft-pipeline/types";
+import { ContentTheme } from "./draft-pipeline/content-themes";
 import { serializeThreadSegments } from "./thread-content";
 
 type DemoAiSettings = {
@@ -413,6 +414,7 @@ export function createDemoGeneratedDraft(input: {
   model: string;
   rawResponse: unknown;
   scheduledAt?: string;
+  theme: ContentTheme;
 }) {
   const draft: DemoPost = {
     id: randomUUID(),
@@ -432,6 +434,9 @@ export function createDemoGeneratedDraft(input: {
     generation_notes: {
       title: input.material.title,
       tags: input.material.tags,
+      theme_key: input.theme.key,
+      theme_label: input.theme.label,
+      theme_order: input.theme.order,
       thread_segments: input.threadSegments,
       rawResponse: input.rawResponse
     },

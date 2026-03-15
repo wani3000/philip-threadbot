@@ -3,14 +3,17 @@ import { buildDefaultAiSettingsPayload } from "../ai-settings/defaults";
 import {
   createDemoGeneratedDraft,
   getDemoAiSettings,
+  listDemoPosts,
   markDemoMaterialUsed,
   selectDemoProfileMaterial
 } from "../demo-store";
 import { isDemoModeEnabled } from "../runtime";
-import {
+import type { ContentTheme } from "./content-themes";
+import type {
   AiSettingsRecord,
   DraftPipelineInput,
-  ProfileMaterialRecord
+  ProfileMaterialRecord,
+  RecentDraftContext
 } from "./types";
 
 function buildMaterialQuery(input: DraftPipelineInput) {
@@ -79,7 +82,13 @@ export async function getDefaultAiSettings() {
   return data;
 }
 
-export async function selectProfileMaterial(input: DraftPipelineInput) {
+export async function selectProfileMaterial(
+  input: DraftPipelineInput,
+  options?: {
+    preferredCategories?: ProfileMaterialRecord["category"][];
+    excludedProfileIds?: string[];
+  }
+) {
   if (isDemoModeEnabled()) {
     return selectDemoProfileMaterial(input);
   }
@@ -96,7 +105,29 @@ export async function selectProfileMaterial(input: DraftPipelineInput) {
     throw new Error("활성화된 원재료를 찾을 수 없습니다.");
   }
 
+  const preferredCategoryOrder = new Map(
+    (options?.preferredCategories ?? []).map((category, index) => [
+      category,
+      index
+    ])
+  );
+  const excludedProfileIds = new Set(options?.excludedProfileIds ?? []);
+
   const selected = [...materials].sort((left, right) => {
+    const leftExcludedPenalty = excludedProfileIds.has(left.id) ? 1 : 0;
+    const rightExcludedPenalty = excludedProfileIds.has(right.id) ? 1 : 0;
+
+    if (leftExcludedPenalty !== rightExcludedPenalty) {
+      return leftExcludedPenalty - rightExcludedPenalty;
+    }
+
+    const leftCategoryRank = preferredCategoryOrder.get(left.category) ?? 999;
+    const rightCategoryRank = preferredCategoryOrder.get(right.category) ?? 999;
+
+    if (leftCategoryRank !== rightCategoryRank) {
+      return leftCategoryRank - rightCategoryRank;
+    }
+
     const priorityCompare =
       scorePriority(left.priority) - scorePriority(right.priority);
 
@@ -114,6 +145,93 @@ export async function selectProfileMaterial(input: DraftPipelineInput) {
   })[0];
 
   return selected;
+}
+
+export async function getGeneratedPostCount() {
+  if (isDemoModeEnabled()) {
+    return listDemoPosts({ limit: 500 }).length;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { count, error } = await supabase
+    .from("posts")
+    .select("id", { count: "exact", head: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function listRecentDraftContexts(limit = 6) {
+  if (isDemoModeEnabled()) {
+    return listDemoPosts({ limit }).map((post) => ({
+      postId: post.id,
+      createdAt: post.created_at,
+      profileId: post.profile_id,
+      title:
+        typeof post.source_snapshot?.title === "string"
+          ? post.source_snapshot.title
+          : "제목 없음",
+      category:
+        typeof post.source_snapshot?.category === "string"
+          ? post.source_snapshot.category
+          : null,
+      themeKey:
+        typeof post.generation_notes?.theme_key === "string"
+          ? post.generation_notes.theme_key
+          : null,
+      themeLabel:
+        typeof post.generation_notes?.theme_label === "string"
+          ? post.generation_notes.theme_label
+          : null
+    })) as RecentDraftContext[];
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, created_at, profile_id, source_snapshot, generation_notes")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((post) => {
+    const sourceSnapshot =
+      typeof post.source_snapshot === "object" && post.source_snapshot
+        ? post.source_snapshot
+        : {};
+    const generationNotes =
+      typeof post.generation_notes === "object" && post.generation_notes
+        ? post.generation_notes
+        : {};
+
+    return {
+      postId: post.id,
+      createdAt: post.created_at,
+      profileId: post.profile_id,
+      title:
+        typeof sourceSnapshot.title === "string"
+          ? sourceSnapshot.title
+          : "제목 없음",
+      category:
+        typeof sourceSnapshot.category === "string"
+          ? sourceSnapshot.category
+          : null,
+      themeKey:
+        typeof generationNotes.theme_key === "string"
+          ? generationNotes.theme_key
+          : null,
+      themeLabel:
+        typeof generationNotes.theme_label === "string"
+          ? generationNotes.theme_label
+          : null
+    };
+  }) as RecentDraftContext[];
 }
 
 export async function markMaterialUsed(profileId: string) {
@@ -154,7 +272,8 @@ export async function saveGeneratedDraft({
   provider,
   model,
   rawResponse,
-  scheduledAt
+  scheduledAt,
+  theme
 }: {
   material: ProfileMaterialRecord;
   generatedContent: string;
@@ -163,6 +282,7 @@ export async function saveGeneratedDraft({
   model: string;
   rawResponse: unknown;
   scheduledAt?: string;
+  theme: ContentTheme;
 }) {
   if (isDemoModeEnabled()) {
     return createDemoGeneratedDraft({
@@ -172,7 +292,8 @@ export async function saveGeneratedDraft({
       provider,
       model,
       rawResponse,
-      scheduledAt
+      scheduledAt,
+      theme
     });
   }
 
@@ -192,6 +313,9 @@ export async function saveGeneratedDraft({
       generation_notes: {
         title: material.title,
         tags: material.tags,
+        theme_key: theme.key,
+        theme_label: theme.label,
+        theme_order: theme.order,
         thread_segments: threadSegments,
         rawResponse
       }

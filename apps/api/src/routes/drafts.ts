@@ -25,7 +25,9 @@ draftsRouter.post(
       metadata: {
         provider: result.provider,
         model: result.model,
-        profileId: result.material.id
+        profileId: result.material.id,
+        themeKey: result.theme.key,
+        themeLabel: result.theme.label
       }
     });
     response.status(201).json(result);

@@ -1,5 +1,6 @@
 import { AiProviderName } from "../ai/types";
 import { ProfileMaterialCategory } from "../profile-material/categories";
+import { ContentThemeKey } from "./content-themes";
 
 export type ProfileMaterialRecord = {
   id: string;
@@ -30,4 +31,14 @@ export type DraftPipelineInput = {
   provider?: AiProviderName;
   model?: string;
   scheduledAt?: string;
+};
+
+export type RecentDraftContext = {
+  postId: string;
+  createdAt: string;
+  profileId: string | null;
+  title: string;
+  category: ProfileMaterialCategory | null;
+  themeKey: ContentThemeKey | null;
+  themeLabel: string | null;
 };

@@ -1,3 +1,4 @@
+import { ContentTheme, RecentPostThemeContext } from "./content-themes";
 import { AiSettingsRecord, ProfileMaterialRecord } from "./types";
 import {
   modelThreadBreakToken,
@@ -70,10 +71,35 @@ export function buildDraftSystemPrompt(settings?: AiSettingsRecord | null) {
   return `${basePrompt}\n\n추가 시스템 지침:\n${settings.custom_system_prompt}`;
 }
 
-export function buildDraftUserPrompt(material: ProfileMaterialRecord) {
+export function buildDraftUserPrompt(input: {
+  material: ProfileMaterialRecord;
+  theme: ContentTheme;
+  recentPosts: RecentPostThemeContext[];
+}) {
+  const recentHistoryLines =
+    input.recentPosts.length > 0
+      ? input.recentPosts.map((post, index) => {
+          const parts = [`${index + 1}. ${post.themeLabel ?? "주제 미기록"}`];
+
+          if (post.title) {
+            parts.push(`제목: ${post.title}`);
+          }
+
+          if (post.category) {
+            parts.push(`카테고리: ${post.category}`);
+          }
+
+          return parts.join(" / ");
+        })
+      : ["최근 생성 이력 없음"];
+
   return [
     "다음 원재료를 바탕으로 Threads 초안을 작성해 주세요.",
     "요구사항:",
+    `- 이번 글의 고정 주제는 "${input.theme.label}" 입니다.`,
+    `- 이번 글은 반드시 "${input.theme.focus}"에 집중합니다.`,
+    "- 아래 주제 순서대로 순환하므로, 현재 주제 외의 다른 순번 주제를 섞지 않습니다.",
+    "- 글의 사례, 결론, 표현, CTA, 배운 점이 최근 글과 겹치면 안 됩니다.",
     "- 가장 배우기까지 오래 걸린 통찰 하나를 중심으로 씁니다.",
     `- 총 2~3개의 글로 작성하고, 각 글 사이는 ${modelThreadBreakToken} 토큰으로 구분합니다.`,
     "- 1번 글은 장면, 관찰, 숫자 중 하나로 시작하는 훅과 문제 제기입니다.",
@@ -85,12 +111,25 @@ export function buildDraftUserPrompt(material: ProfileMaterialRecord) {
     "- 예: 웁살라시큐리티 -> 싱가포르 블록체인 기업, 피트 -> 헬스케어 스타트업.",
     "- 메타포는 1개만 사용하고, 설명용 장식이 아니라 논리를 밀어주는 역할로 씁니다.",
     "- 각 글은 500자를 넘기지 않게 하고, 마지막 글에만 3~5개의 해시태그를 포함합니다.",
+    "- 최근 글과 같은 원재료 제목, 같은 사례, 같은 숫자 조합을 반복하지 않습니다.",
     "",
-    `카테고리: ${material.category}`,
-    `제목: ${material.title}`,
-    `태그: ${material.tags.join(", ") || "없음"}`,
+    "주제 순서:",
+    "1. UX 어떻게 해야 하는지. 초보 디자이너한테 주는 팁",
+    "2. 바이브코딩 디자이너가 왜 해야 하는지",
+    "3. UIUX 포트폴리오 어떻게 만들어야 하는지",
+    "4. 초보 디자이너에게 주는 전체적인 디자인 팁",
+    "5. 바이브코딩의 중요성",
+    "6. 디자이너로서 필립의 경험",
+    "7. 내 경험을 UIUX 포트폴리오에 녹여내는 방법",
+    "",
+    "최근 생성 이력:",
+    ...recentHistoryLines,
+    "",
+    `카테고리: ${input.material.category}`,
+    `제목: ${input.material.title}`,
+    `태그: ${input.material.tags.join(", ") || "없음"}`,
     "원재료:",
-    material.content
+    input.material.content
   ].join("\n");
 }
 

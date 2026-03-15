@@ -271,7 +271,9 @@ postsRouter.post(
       metadata: {
         provider: result.provider,
         model: result.model,
-        draftId: result.draft.id
+        draftId: result.draft.id,
+        themeKey: result.theme.key,
+        themeLabel: result.theme.label
       }
     });
     response.status(201).json(result);

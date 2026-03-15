@@ -49,6 +49,7 @@ type StoredPostRecord = {
 
 const storedPostSelect =
   "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot, generation_notes";
+const autoPostingCadenceDays = 2;
 
 function buildRunKey(jobType: JobType, dateInput?: string) {
   const date = dateInput ? new Date(dateInput) : new Date();
@@ -244,6 +245,68 @@ async function fetchDueScheduledPosts(cutoffIso: string) {
   }
 
   return data ?? [];
+}
+
+async function fetchUpcomingScheduledPost(nowIso: string) {
+  const posts = isDemoModeEnabled()
+    ? listDemoPosts({
+        status: "scheduled",
+        limit: 20
+      })
+    : await (async () => {
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase
+          .from("posts")
+          .select(storedPostSelect)
+          .eq("status", "scheduled")
+          .eq("publish_status", "pending")
+          .gt("scheduled_at", nowIso)
+          .order("scheduled_at", { ascending: true })
+          .limit(1)
+          .returns<StoredPostRecord[]>();
+
+        if (error) {
+          throw error;
+        }
+
+        return data ?? [];
+      })();
+
+  return posts[0] ?? null;
+}
+
+async function fetchLatestCadenceAnchorPost() {
+  const posts = isDemoModeEnabled()
+    ? listDemoPosts({ limit: 50 })
+    : await (async () => {
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase
+          .from("posts")
+          .select(storedPostSelect)
+          .in("status", ["scheduled", "published"])
+          .not("scheduled_at", "is", null)
+          .order("scheduled_at", { ascending: false })
+          .limit(1)
+          .returns<StoredPostRecord[]>();
+
+        if (error) {
+          throw error;
+        }
+
+        return data ?? [];
+      })();
+
+  return (
+    posts
+      .filter(
+        (post) =>
+          (post.status === "scheduled" || post.status === "published") &&
+          Boolean(post.scheduled_at)
+      )
+      .sort((left, right) =>
+        (right.scheduled_at ?? "").localeCompare(left.scheduled_at ?? "")
+      )[0] ?? null
+  );
 }
 
 async function fetchTomorrowPreviewPosts(baseDate?: string) {
@@ -498,16 +561,44 @@ async function publishReplyThreadWithRetry(input: {
 
 async function executeGenerateDailyDraft(baseDate?: string) {
   const settings = await getDefaultAiSettings();
+  const nowIso = baseDate
+    ? new Date(baseDate).toISOString()
+    : new Date().toISOString();
+  const upcomingScheduledPost = await fetchUpcomingScheduledPost(nowIso);
+
+  if (upcomingScheduledPost) {
+    logger.info("job.generate_daily_draft.skipped", {
+      reason: "upcoming_scheduled_post_exists",
+      scheduledAt: upcomingScheduledPost.scheduled_at,
+      cadenceDays: autoPostingCadenceDays
+    });
+    return {
+      created: false,
+      reason: "upcoming_scheduled_post_exists",
+      cadenceDays: autoPostingCadenceDays,
+      scheduledAt: upcomingScheduledPost.scheduled_at
+    };
+  }
+
+  const latestCadencePost = await fetchLatestCadenceAnchorPost();
   const scheduledAt = buildScheduledAtIso({
-    baseDate,
-    dayOffset: 1,
+    baseDate: latestCadencePost?.scheduled_at ?? baseDate,
+    dayOffset: latestCadencePost ? autoPostingCadenceDays : 1,
     time: settings?.default_post_time ?? "09:00:00",
     timeZone: settings?.timezone ?? env.TIMEZONE
   });
 
-  return generateDraftFromProfile({
+  const result = await generateDraftFromProfile({
     scheduledAt
   });
+
+  return {
+    created: true,
+    cadenceDays: autoPostingCadenceDays,
+    scheduledAt,
+    draftId: result.draft.id,
+    themeKey: result.theme.key
+  };
 }
 
 async function executeSendDailyTelegram(baseDate?: string) {

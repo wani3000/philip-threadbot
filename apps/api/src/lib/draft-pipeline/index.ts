@@ -1,6 +1,7 @@
 import { getAiProvider } from "../ai/providers";
 import { AiProviderName } from "../ai/types";
 import { isDemoModeEnabled } from "../runtime";
+import { getNextContentTheme } from "./content-themes";
 import {
   finalizeDraftText,
   buildDraftSystemPrompt,
@@ -8,6 +9,8 @@ import {
 } from "./prompt";
 import {
   getDefaultAiSettings,
+  getGeneratedPostCount,
+  listRecentDraftContexts,
   markMaterialUsed,
   saveGeneratedDraft,
   selectProfileMaterial
@@ -24,6 +27,7 @@ function generateDemoDraftText(material: {
   title: string;
   content: string;
   tags: string[];
+  themeLabel: string;
 }) {
   const firstSentence =
     material.content.split(".")[0]?.trim() ?? material.title;
@@ -35,7 +39,7 @@ function generateDemoDraftText(material: {
     .join(" ");
 
   return [
-    `${material.title} 이야기는 늘 결과보다 장면이 먼저 떠오릅니다.`,
+    `${material.themeLabel} 이야기를 할 때도 결국 출발점은 장면이었습니다.`,
     "",
     `${firstSentence} 문제는 일이 많다는 사실보다 어디를 먼저 봐야 하는지 보이지 않는 데 있었습니다.`,
     "<<<THREAD_BREAK>>>",
@@ -47,7 +51,19 @@ function generateDemoDraftText(material: {
 
 export async function generateDraftFromProfile(input: DraftPipelineInput) {
   const settings = await getDefaultAiSettings();
-  const material = await selectProfileMaterial(input);
+  const [recentPosts, generatedPostCount] = await Promise.all([
+    listRecentDraftContexts(),
+    getGeneratedPostCount()
+  ]);
+  const theme = getNextContentTheme(recentPosts, generatedPostCount);
+  const material = await selectProfileMaterial(input, {
+    preferredCategories: input.category
+      ? undefined
+      : [...theme.preferredCategories],
+    excludedProfileIds: recentPosts
+      .map((post) => post.profileId)
+      .filter((value): value is string => Boolean(value))
+  });
 
   const providerName =
     input.provider ??
@@ -58,13 +74,20 @@ export async function generateDraftFromProfile(input: DraftPipelineInput) {
   const provider = getAiProvider(providerName);
 
   const systemPrompt = buildDraftSystemPrompt(settings);
-  const userPrompt = buildDraftUserPrompt(material);
+  const userPrompt = buildDraftUserPrompt({
+    material,
+    theme,
+    recentPosts
+  });
 
   const result = isDemoModeEnabled()
     ? {
         provider: providerName,
         model,
-        text: generateDemoDraftText(material),
+        text: generateDemoDraftText({
+          ...material,
+          themeLabel: theme.label
+        }),
         rawResponse: {
           mode: "demo",
           systemPrompt,
@@ -95,12 +118,15 @@ export async function generateDraftFromProfile(input: DraftPipelineInput) {
     provider: result.provider,
     model: result.model,
     rawResponse: result.rawResponse,
-    scheduledAt: input.scheduledAt
+    scheduledAt: input.scheduledAt,
+    theme
   });
 
   return {
     material,
     settings,
+    theme,
+    recentPosts,
     draft,
     provider: result.provider,
     model: result.model
