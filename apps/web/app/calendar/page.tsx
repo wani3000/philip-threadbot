@@ -141,6 +141,7 @@ export default async function CalendarPage({
           cells={monthCells}
           monthLabel={monthLabel}
           onReschedule={rescheduleCalendarPostAction}
+          timeZone={settings.timezone}
           timezoneLabel={settings.timezone}
           unscheduledPosts={unscheduledPosts}
         />

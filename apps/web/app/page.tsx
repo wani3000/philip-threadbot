@@ -24,6 +24,7 @@ import {
 } from "../lib/profile-categories";
 import { hasSupabaseAuthConfig } from "../lib/supabase/config";
 import { splitStoredThreadContent } from "../lib/thread-content";
+import { formatDateTimeLocalInTimeZone } from "../lib/timezone";
 
 function getTomorrowRange() {
   const now = new Date();
@@ -291,13 +292,10 @@ export default async function HomePage() {
                     <div className="field">
                       <label htmlFor="scheduledAt">게시 시간</label>
                       <input
-                        defaultValue={
-                          tomorrowPost.scheduled_at
-                            ? new Date(tomorrowPost.scheduled_at)
-                                .toISOString()
-                                .slice(0, 16)
-                            : ""
-                        }
+                        defaultValue={formatDateTimeLocalInTimeZone(
+                          tomorrowPost.scheduled_at,
+                          settings.timezone
+                        )}
                         id="scheduledAt"
                         name="scheduledAt"
                         type="datetime-local"

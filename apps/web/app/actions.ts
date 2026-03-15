@@ -18,6 +18,13 @@ import {
 import { isLocalDemoMode } from "../lib/runtime";
 import { getMissingSupabaseConfigMessage } from "../lib/supabase/config";
 import { createServerSupabaseClient } from "../lib/supabase/server";
+import {
+  addDaysToDateParts,
+  getTimeZoneParts,
+  parseDateTimeLocalInTimeZone,
+  parseTimeValue,
+  toUtcFromTimeZone
+} from "../lib/timezone";
 
 function parseTags(rawValue: FormDataEntryValue | null) {
   return String(rawValue ?? "")
@@ -33,95 +40,7 @@ function parseDateTimeLocal(value: FormDataEntryValue | null) {
     return null;
   }
 
-  return new Date(raw).toISOString();
-}
-
-function parseTimeValue(value: string) {
-  const [hour = "09", minute = "00", second = "00"] = value.split(":");
-  return {
-    hour: Number.parseInt(hour, 10),
-    minute: Number.parseInt(minute, 10),
-    second: Number.parseInt(second, 10)
-  };
-}
-
-function getTimeZoneParts(date: Date, timeZone: string) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZoneName: "longOffset"
-  });
-
-  const parts = formatter.formatToParts(date);
-  const read = (type: string) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return {
-    year: Number.parseInt(read("year"), 10),
-    month: Number.parseInt(read("month"), 10),
-    day: Number.parseInt(read("day"), 10),
-    hour: Number.parseInt(read("hour"), 10),
-    minute: Number.parseInt(read("minute"), 10),
-    second: Number.parseInt(read("second"), 10),
-    offsetLabel: read("timeZoneName")
-  };
-}
-
-function getOffsetMinutes(date: Date, timeZone: string) {
-  const { offsetLabel } = getTimeZoneParts(date, timeZone);
-  const matched = offsetLabel.match(/GMT([+-])(\d{2}):?(\d{2})/u);
-
-  if (!matched) {
-    return 0;
-  }
-
-  const [, sign, hours, minutes] = matched;
-  const absoluteMinutes =
-    Number.parseInt(hours, 10) * 60 + Number.parseInt(minutes, 10);
-
-  return sign === "-" ? -absoluteMinutes : absoluteMinutes;
-}
-
-function toUtcFromTimeZone(input: {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-  timeZone: string;
-}) {
-  const utcGuess = Date.UTC(
-    input.year,
-    input.month - 1,
-    input.day,
-    input.hour,
-    input.minute,
-    input.second
-  );
-  const offsetMinutes = getOffsetMinutes(new Date(utcGuess), input.timeZone);
-
-  return new Date(utcGuess - offsetMinutes * 60_000);
-}
-
-function addDaysToDateParts(
-  input: { year: number; month: number; day: number },
-  dayOffset: number
-) {
-  const date = new Date(Date.UTC(input.year, input.month - 1, input.day));
-  date.setUTCDate(date.getUTCDate() + dayOffset);
-
-  return {
-    year: date.getUTCFullYear(),
-    month: date.getUTCMonth() + 1,
-    day: date.getUTCDate()
-  };
+  return raw;
 }
 
 async function buildTomorrowScheduledIso() {
@@ -139,6 +58,17 @@ async function buildTomorrowScheduledIso() {
     second: timeValue.second,
     timeZone: settings.timezone
   }).toISOString();
+}
+
+async function parseScheduledAtForSettings(value: FormDataEntryValue | null) {
+  const raw = parseDateTimeLocal(value);
+
+  if (!raw) {
+    return null;
+  }
+
+  const settings = await fetchAiSettings();
+  return parseDateTimeLocalInTimeZone(raw, settings.timezone);
 }
 
 export async function createProfileMaterialAction(formData: FormData) {
@@ -178,12 +108,16 @@ export async function deleteProfileMaterialAction(formData: FormData) {
 }
 
 export async function generateDraftAction(formData: FormData) {
+  const scheduledAt = await parseScheduledAtForSettings(
+    formData.get("scheduledAt")
+  );
+
   await generateDraft({
     profileId: String(formData.get("profileId") || "") || undefined,
     category: String(formData.get("category") || "") || undefined,
     provider: String(formData.get("provider") || "") || undefined,
     model: String(formData.get("model") || "") || undefined,
-    scheduledAt: parseDateTimeLocal(formData.get("scheduledAt")) ?? undefined
+    scheduledAt: scheduledAt ?? undefined
   });
 
   revalidatePath("/");
@@ -193,10 +127,13 @@ export async function generateDraftAction(formData: FormData) {
 
 export async function updatePostAction(formData: FormData) {
   const id = String(formData.get("id"));
+  const scheduledAt = await parseScheduledAtForSettings(
+    formData.get("scheduledAt")
+  );
 
   await updatePost(id, {
     editedContent: String(formData.get("editedContent") || "") || undefined,
-    scheduledAt: parseDateTimeLocal(formData.get("scheduledAt")),
+    scheduledAt,
     status: String(formData.get("status") || "") || undefined
   });
 

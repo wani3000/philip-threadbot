@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { StatusBadge } from "./status-badge";
+import { buildRescheduledIsoForDateKey } from "../lib/timezone";
 
 type CalendarPost = {
   id: string;
@@ -12,6 +13,7 @@ type CalendarPost = {
 
 type CalendarMonthBoardProps = {
   monthLabel: string;
+  timeZone: string;
   timezoneLabel: string;
   cells: Array<{
     key: string;
@@ -24,28 +26,13 @@ type CalendarMonthBoardProps = {
   onReschedule: (formData: FormData) => Promise<void>;
 };
 
-function getRescheduleIso(dateKey: string, existingIso: string | null) {
-  const existingDate = existingIso ? new Date(existingIso) : null;
-  const hours = existingDate?.getHours() ?? 9;
-  const minutes = existingDate?.getMinutes() ?? 0;
-  const [year, month, day] = dateKey.split("-").map(Number);
-
-  return new Date(
-    year,
-    (month ?? 1) - 1,
-    day ?? 1,
-    hours,
-    minutes,
-    0
-  ).toISOString();
-}
-
 function isDraggableStatus(status: string) {
   return ["draft", "approved", "scheduled"].includes(status);
 }
 
 export function CalendarMonthBoard({
   monthLabel,
+  timeZone,
   timezoneLabel,
   cells,
   unscheduledPosts,
@@ -56,7 +43,11 @@ export function CalendarMonthBoard({
   const [statusMessage, setStatusMessage] = useState<string>("");
 
   function submitReschedule(post: CalendarPost, dateKey: string) {
-    const nextIso = getRescheduleIso(dateKey, post.scheduledAt);
+    const nextIso = buildRescheduledIsoForDateKey({
+      dateKey,
+      timeZone,
+      existingIso: post.scheduledAt
+    });
 
     startTransition(async () => {
       const formData = new FormData();

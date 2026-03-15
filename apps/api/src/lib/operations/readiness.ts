@@ -1,6 +1,7 @@
 import { env } from "../../config/env";
 import { getCurrentThreadsUser } from "../threads/client";
 import { isDemoModeEnabled } from "../runtime";
+import { createSupabaseAdminClient } from "../supabase";
 
 type ReadinessStatus = "ready" | "warning" | "blocked";
 
@@ -156,7 +157,7 @@ function getSupabaseCheck(): ReadinessCheck {
   };
 }
 
-function getLlmCheck(): ReadinessCheck {
+async function getLlmCheck(): Promise<ReadinessCheck> {
   const configuredProviders = [
     env.ANTHROPIC_API_KEY ? "Anthropic" : null,
     env.OPENAI_API_KEY ? "OpenAI" : null,
@@ -173,12 +174,78 @@ function getLlmCheck(): ReadinessCheck {
     };
   }
 
-  return {
-    key: "llm",
-    label: "LLM 초안 생성",
-    status: "ready",
-    message: `${configuredProviders.join(", ")} provider가 연결되어 있습니다.`
-  };
+  if (
+    isDemoModeEnabled() ||
+    !env.SUPABASE_URL ||
+    !env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return {
+      key: "llm",
+      label: "LLM 초안 생성",
+      status: "warning",
+      message:
+        "LLM provider 키는 연결되어 있지만, 실생성 성공 이력을 아직 확인하지 못했습니다."
+    };
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const recentThreshold = new Date(
+      Date.now() - 30 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("created_at, metadata")
+      .in("action", ["draft.generated", "post.regenerated"])
+      .gte("created_at", recentThreshold)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      throw error;
+    }
+
+    const successfulEntry = (data ?? []).find((entry) => {
+      const provider =
+        typeof entry.metadata === "object" &&
+        entry.metadata &&
+        "provider" in entry.metadata
+          ? String(entry.metadata.provider).toLowerCase()
+          : "";
+
+      return configuredProviders.some(
+        (configuredProvider) => provider === configuredProvider.toLowerCase()
+      );
+    });
+
+    if (!successfulEntry) {
+      return {
+        key: "llm",
+        label: "LLM 초안 생성",
+        status: "warning",
+        message:
+          "LLM provider 키는 연결되어 있지만, 최근 30일 내 실생성 성공 이력이 아직 없습니다.",
+        details: configuredProviders
+      };
+    }
+
+    return {
+      key: "llm",
+      label: "LLM 초안 생성",
+      status: "ready",
+      message: `${configuredProviders.join(", ")} provider가 연결되어 있고 최근 실생성 성공 이력이 있습니다.`,
+      details: [`최근 성공: ${successfulEntry.created_at}`]
+    };
+  } catch (error) {
+    return {
+      key: "llm",
+      label: "LLM 초안 생성",
+      status: "warning",
+      message:
+        "LLM provider 키는 연결되어 있지만, 최근 실생성 성공 여부를 확인하지 못했습니다.",
+      details: [error instanceof Error ? error.message : "Unknown error"]
+    };
+  }
 }
 
 function getCronCheck(): ReadinessCheck {
@@ -228,7 +295,7 @@ export async function getOperationalReadiness(): Promise<OperationalReadiness> {
   const checks = await Promise.all([
     Promise.resolve(getModeCheck()),
     Promise.resolve(getSupabaseCheck()),
-    Promise.resolve(getLlmCheck()),
+    getLlmCheck(),
     Promise.resolve(getCronCheck()),
     getTelegramCheck(),
     getThreadsCheck()
