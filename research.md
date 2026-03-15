@@ -495,9 +495,10 @@ The remaining endpoints in this section are design targets if they are not liste
 - Google provider wiring and real admin sign-in verification are complete.
 - Live draft generation, Telegram delivery, and real Threads publishing are all verified on the production path.
 - A real Threads API failure surfaced during launch testing: posts over 500 characters are rejected. The repository now enforces the character limit during draft finalization.
-- Threads publishing works, but insights collection and storage are still not implemented.
-- Calendar remains a grouped-list view rather than the planned monthly drag-and-drop scheduler.
-- Library reuse actions and richer home analytics are still missing.
+- Threads publishing now also enforces the operating cadence at publish time, rescheduling overflow posts instead of sending multiple same-day publishes.
+- The generation pipeline now runs on a fixed 7-theme rotation, excludes recently used source material, anonymizes company names, and rejects near-duplicate drafts locally without paying for an extra LLM validation pass.
+- Calendar is now a monthly drag-and-drop board, and library reuse actions schedule the next valid cadence slot rather than blindly cloning for tomorrow.
+- Threads insights endpoints, richer home analytics, and library reuse tooling are implemented in code. The remaining activation step is operational: apply `0004_threads_insights.sql` and verify live sync.
 - Automated tests beyond format/lint/typecheck/build do not exist yet.
 
 ### 9.2 Product-level risks carried from the planning document
@@ -518,4 +519,4 @@ The remaining endpoints in this section are design targets if they are not liste
 
 ## 10. Initial Conclusion
 
-This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Google admin login, Anthropic-backed draft generation, Telegram preview delivery, real Threads publishing, and structured Philip source-material seeding. The MVP launch path is complete. The remaining roadmap is now PT-34 expansion work: Threads insights, richer home analytics, library reuse tooling, and a stronger calendar UX.
+This project started from a blank repository and now has a working MVP dashboard/API foundation, pre-credential demo mode, launch-readiness scaffolding, live Supabase production wiring, real Google admin login, Anthropic-backed draft generation, Telegram preview delivery, real Threads publishing, structured Philip source-material seeding, a multi-post thread workflow, a monthly rescheduling calendar, reusable library actions, and dashboard-facing insight summaries. The MVP launch path is complete and the current operating policy is intentionally low-cost: one thread every two days, fixed theme rotation, recent-material avoidance, and local duplicate rejection without extra LLM validation calls. The remaining roadmap is now narrow: apply `0004_threads_insights.sql` in production and verify live insight sync under `PT-58`.

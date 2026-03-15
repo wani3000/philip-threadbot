@@ -661,9 +661,15 @@ Iteration:
 - 2026-03-14:
   - `PT-40` implemented the insight snapshot schema, Threads insights summary/sync endpoints, and graceful empty fallback when the tables are not present yet.
   - `PT-41` added home performance cards, top-post ranking, and category-level bars driven by insight summary data.
-  - `PT-42` added library reuse actions (`새 초안으로 재사용`, `내일 일정으로 복제`) plus per-post insight snippets and direct Threads post links.
+  - `PT-42` added library reuse actions (`새 초안으로 재사용`, `다음 일정으로 복제`) plus per-post insight snippets and direct Threads post links.
   - `PT-39` replaced the simple list calendar with a monthly board and drag-and-drop schedule movement flow.
   - Because the new Supabase migration has not been applied in production yet, the live sync activation step was split out as `PT-58`.
+- 2026-03-15:
+  - Post-implementation hardening aligned the operating policy to a low-cost cadence-first workflow.
+  - Publish-time guards now enforce the same `2일 1회` cadence used by draft generation, and overflow scheduled posts are rescheduled instead of being double-published on the same day.
+  - Library reuse no longer schedules tomorrow blindly; it now finds the next valid cadence slot.
+  - Theme rotation now starts from topic 1 when there is no prior `theme_key` history, so legacy pre-theme posts do not skew the new sequence.
+  - Near-duplicate protection now runs as a local heuristic check against recent posts, and duplicate hits fail fast instead of triggering extra LLM validation/retry cost.
 
 Todo List:
 
@@ -955,7 +961,7 @@ Iteration:
   - `PT-56` 전면 코드 검토 및 thread preview 리팩토링 완료
   - `PT-57` Threads reply publish 재시도 보강 및 라이브 재검증 완료
 - 미완료 작업 및 현재 상태:
-  - `PT-39`~`PT-42`는 후순위 확장 기능으로 모두 `To Do`입니다.
+  - `PT-58`는 후순위 운영 마감 작업으로 남아 있으며, Supabase에 `0004_threads_insights.sql`을 적용한 뒤 live sync를 검증하면 됩니다.
 - 작업 중 발견한 이슈나 주의사항:
   - `web` Vercel 프로젝트에는 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 없으면 로그인은 비활성화되지만 화면은 깨지지 않습니다.
   - 이어쓰기 글은 `generation_notes.thread_segments`와 `generated_content/edited_content`의 `---` 구분선 두 경로 모두에서 복원됩니다.
@@ -965,12 +971,10 @@ Iteration:
   - GitHub push -> Vercel 자동 배포는 현재 정상입니다.
   - `ai_settings` 테이블이 비어 있어도 이제 API가 기본 설정을 자동 생성합니다.
   - 새 Supabase 프로젝트에는 Philip 원재료가 총 49건 적재되어 있습니다.
+  - 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다.
 - 다음으로 처리해야 할 하위 태스크 번호 및 순서:
-  - `PT-40`
-  - `PT-41`
-  - `PT-42`
-  - `PT-39`
+  - `PT-58`
 - 막히거나 판단이 필요한 부분:
-  - 운영 필수 범위는 종료되었고, 이제는 PT-34 확장 작업만 남았습니다.
+  - 운영 필수 범위는 종료되었고, 코드 기준 남은 실제 작업은 `PT-58`뿐입니다.
 - UI 승인 대기 중인 이슈 목록:
   - 없음

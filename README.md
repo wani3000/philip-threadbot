@@ -4,7 +4,7 @@ Philip Threadbot is an admin-operated automation system that turns Philip Design
 
 ## Current Context
 
-Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, a multi-post thread prompt pipeline, Telegram preview flow, GitHub-to-Vercel automatic deployment for both `web` and `api`, a live Supabase-backed production path, and a production-verified end-to-end flow from draft generation to Telegram preview to real Threads publishing.
+Initial setup and the MVP admin surface are now in place. The repository started empty, and the current baseline now covers the dashboard, API, demo-mode local runtime, a multi-post thread prompt pipeline, Telegram preview flow, GitHub-to-Vercel automatic deployment for both `web` and `api`, a live Supabase-backed production path, and a production-verified end-to-end flow from draft generation to Telegram preview to real Threads publishing. The current operating policy is intentionally low-cost: one connected thread every two days, fixed theme rotation, recent-material avoidance, and local duplicate rejection without extra LLM validation calls.
 
 ## Core Directory Structure
 
@@ -27,8 +27,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 - Draft generation now uses a fixed three-stage prompt pipeline.
 - Stage 1 injects a `simon-writing`-inspired writing contract so the post starts from a scene or observation, delays the insight until the end, alternates sentence rhythm, and uses one structural metaphor.
-- Stage 2 converts the text into Philip's voice: polite tone, first-person project experience, designer vocabulary, and concrete numbers or outcomes.
+- Stage 2 converts the text into Philip's voice: polite tone, first-person project experience, designer vocabulary, concrete numbers or outcomes, and explicit anonymization of company or institution names into descriptive categories.
 - Stage 3 optimizes the output for Threads as a 2 to 3 post connected thread with a hook on the first line, intentional line breaks, a per-post 500 character ceiling, and 3 to 5 hashtags on the final post.
+- Draft themes rotate in a fixed 7-topic order, and the low-cost guardrail is to reject near-duplicate drafts locally instead of paying for an extra model-side critique or retry pass.
 - Reference source: [juliuschun/simon-writing](https://github.com/juliuschun/simon-writing)
 
 ## Agent Ownership
@@ -119,12 +120,12 @@ Initial setup and the MVP admin surface are now in place. The repository started
   - threaded publish stabilization with reply publish retries and shared thread preview rendering on web surfaces
   - monthly drag-and-drop calendar board for schedule movement
   - Threads insights summary/sync endpoints and dashboard/library consumption
-  - library reuse actions for cloning a post into a new draft or next-day schedule
+  - library reuse actions for cloning a post into a new draft or the next 2-day cadence slot
+  - 7-theme fixed rotation for content generation
+  - every-other-day publish cadence enforced at generation time, library reuse time, and publish time
+  - recent-material exclusion plus local duplicate detection without extra LLM validation calls
 - Next executable tasks:
-  - `PT-40` Threads 인사이트 수집 및 저장 구현
-  - `PT-41` 홈 성과 요약 및 원재료 차트 고도화
-  - `PT-42` 라이브러리 재사용 액션 및 확장 운영 기능 보강
-  - `PT-39` 월간 캘린더 및 드래그앤드롭 일정 조정 구현
+  - `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
 
 ## Deployment Status
 
@@ -147,9 +148,9 @@ Initial setup and the MVP admin surface are now in place. The repository started
 
 ## 🔄 인계 요약 (다음 에이전트 필독)
 
-- 마지막 완료 작업: `PT-42` 라이브러리 재사용 액션 및 확장 운영 기능 보강
+- 마지막 완료 작업: 운영 cadence 강제, 주제 순환, 저비용 중복 검사 보강
 - 다음 작업: `PT-58` Threads 인사이트 마이그레이션 적용 및 live sync 검증
-- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 후순위 확장 코드까지 반영됐고, 남은 실제 작업은 Supabase에 `0004_threads_insights.sql`을 적용해 live insight sync를 검증하는 운영 단계입니다.
+- 주의사항: GitHub -> Vercel 자동 배포는 정상입니다. 현재 운영 규칙은 `2일 1회 게시`, `7개 주제 순환`, `최근 원재료 제외`, `로컬 중복 검사`, `중복 시 자동 재생성 없음`입니다. 남은 실제 작업은 Supabase에 `0004_threads_insights.sql`을 적용해 live insight sync를 검증하는 운영 단계입니다.
 - UI 승인 대기: 없음
 - 참고: `plan.md` Iteration 섹션에 상세 인계 메모 있음
 
@@ -177,10 +178,12 @@ The web dashboard now supports Supabase session login and forwards the session a
 - If `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are configured, Telegram delivery can be validated with real messages even while the rest of the stack stays in demo mode.
 - Live mode에서는 `/login`에서 Supabase 관리자 계정으로 로그인하면 같은 세션으로 대시보드와 API가 연결됩니다.
 - 프로필 원재료의 기준 카테고리는 `경력`, `프로젝트`, `창업스토리`, `강의멘토링`, `디자이너인사이트`, `바이브코딩` 여섯 가지로 고정되어 있습니다.
+- 생성 규칙은 `7개 주제 순환`, `특정 회사명 실명 금지`, `최근 원재료 제외`, `로컬 중복 검사`로 고정되어 있습니다.
+- 운영 cadence는 `2일 1회 게시`이며, 수동 복제와 실제 게시 단계에서도 같은 규칙을 강제합니다.
 - Threads 자격증명은 연결되었고 실제 게시 검증도 끝났습니다.
 - Supabase production 연결과 실DB 마이그레이션도 완료되었습니다.
 - Google 실로그인, Anthropic 실초안 생성, Telegram 전송, Threads 실게시까지 모두 검증 완료되었습니다.
-- 현재 남은 일은 운영 필수 항목이 아니라 PT-34 확장 기능입니다.
+- 현재 남은 실제 작업은 PT-58의 live insights migration/sync 검증입니다.
 
 ## Commit Convention
 
