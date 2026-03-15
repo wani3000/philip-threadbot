@@ -7,6 +7,7 @@ import {
   fetchAiSettings,
   createProfileMaterial,
   deleteProfileMaterial,
+  fetchPosts,
   generateDraft,
   regeneratePost,
   reusePost,
@@ -43,16 +44,36 @@ function parseDateTimeLocal(value: FormDataEntryValue | null) {
   return raw;
 }
 
-async function buildTomorrowScheduledIso() {
+const autoPostingCadenceDays = 2;
+
+async function buildNextCadenceScheduledIso() {
   const settings = await fetchAiSettings();
-  const currentParts = getTimeZoneParts(new Date(), settings.timezone);
-  const tomorrow = addDaysToDateParts(currentParts, 1);
+  const posts = await fetchPosts({ limit: 200 });
+  const latestCadencePost = posts
+    .filter(
+      (post) =>
+        (post.status === "scheduled" || post.status === "published") &&
+        Boolean(post.scheduled_at)
+    )
+    .sort((left, right) =>
+      (right.scheduled_at ?? "").localeCompare(left.scheduled_at ?? "")
+    )[0];
+  const currentParts = getTimeZoneParts(
+    latestCadencePost?.scheduled_at
+      ? new Date(latestCadencePost.scheduled_at)
+      : new Date(),
+    settings.timezone
+  );
+  const targetDate = addDaysToDateParts(
+    currentParts,
+    latestCadencePost ? autoPostingCadenceDays : 1
+  );
   const timeValue = parseTimeValue(settings.default_post_time);
 
   return toUtcFromTimeZone({
-    year: tomorrow.year,
-    month: tomorrow.month,
-    day: tomorrow.day,
+    year: targetDate.year,
+    month: targetDate.month,
+    day: targetDate.day,
     hour: timeValue.hour,
     minute: timeValue.minute,
     second: timeValue.second,
@@ -174,7 +195,7 @@ export async function reusePostAsDraftAction(formData: FormData) {
 }
 
 export async function reusePostForTomorrowAction(formData: FormData) {
-  const scheduledAt = await buildTomorrowScheduledIso();
+  const scheduledAt = await buildNextCadenceScheduledIso();
 
   await reusePost(String(formData.get("id")), {
     status: "scheduled",

@@ -9,13 +9,13 @@ import {
 } from "./prompt";
 import {
   getDefaultAiSettings,
-  getGeneratedPostCount,
   listRecentDraftContexts,
   markMaterialUsed,
   saveGeneratedDraft,
   selectProfileMaterial
 } from "./store";
 import { DraftPipelineInput } from "./types";
+import { findSimilarRecentDraft } from "./uniqueness";
 
 const fallbackModels: Record<AiProviderName, string> = {
   anthropic: "claude-sonnet-4-6",
@@ -51,11 +51,8 @@ function generateDemoDraftText(material: {
 
 export async function generateDraftFromProfile(input: DraftPipelineInput) {
   const settings = await getDefaultAiSettings();
-  const [recentPosts, generatedPostCount] = await Promise.all([
-    listRecentDraftContexts(),
-    getGeneratedPostCount()
-  ]);
-  const theme = getNextContentTheme(recentPosts, generatedPostCount);
+  const recentPosts = await listRecentDraftContexts();
+  const theme = getNextContentTheme(recentPosts);
   const material = await selectProfileMaterial(input, {
     preferredCategories: input.category
       ? undefined
@@ -107,6 +104,19 @@ export async function generateDraftFromProfile(input: DraftPipelineInput) {
 
   if (!finalText) {
     throw new Error("AI가 비어 있는 초안을 반환했습니다.");
+  }
+
+  const similarRecentDraft = findSimilarRecentDraft({
+    finalText,
+    recentPosts,
+    theme,
+    material
+  });
+
+  if (similarRecentDraft) {
+    throw new Error(
+      `최근 글과 내용이 너무 유사합니다. (${similarRecentDraft.title}) 다른 원재료나 다음 주제로 다시 생성해 주세요.`
+    );
   }
 
   await markMaterialUsed(material.id);

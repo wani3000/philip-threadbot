@@ -217,7 +217,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                       <form action={reusePostForTomorrowAction}>
                         <input name="id" type="hidden" value={post.id} />
                         <button className="button-primary" type="submit">
-                          내일 일정으로 복제
+                          다음 일정으로 복제
                         </button>
                       </form>
                       {post.thread_permalink ? (

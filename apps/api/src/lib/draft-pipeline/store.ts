@@ -147,23 +147,6 @@ export async function selectProfileMaterial(
   return selected;
 }
 
-export async function getGeneratedPostCount() {
-  if (isDemoModeEnabled()) {
-    return listDemoPosts({ limit: 500 }).length;
-  }
-
-  const supabase = createSupabaseAdminClient();
-  const { count, error } = await supabase
-    .from("posts")
-    .select("id", { count: "exact", head: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return count ?? 0;
-}
-
 export async function listRecentDraftContexts(limit = 6) {
   if (isDemoModeEnabled()) {
     return listDemoPosts({ limit }).map((post) => ({
@@ -174,6 +157,10 @@ export async function listRecentDraftContexts(limit = 6) {
         typeof post.source_snapshot?.title === "string"
           ? post.source_snapshot.title
           : "제목 없음",
+      content:
+        typeof post.edited_content === "string" && post.edited_content.trim()
+          ? post.edited_content
+          : post.generated_content,
       category:
         typeof post.source_snapshot?.category === "string"
           ? post.source_snapshot.category
@@ -192,7 +179,9 @@ export async function listRecentDraftContexts(limit = 6) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, created_at, profile_id, source_snapshot, generation_notes")
+    .select(
+      "id, created_at, profile_id, generated_content, edited_content, source_snapshot, generation_notes"
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -218,6 +207,12 @@ export async function listRecentDraftContexts(limit = 6) {
         typeof sourceSnapshot.title === "string"
           ? sourceSnapshot.title
           : "제목 없음",
+      content:
+        typeof post.edited_content === "string" && post.edited_content.trim()
+          ? post.edited_content
+          : typeof post.generated_content === "string"
+            ? post.generated_content
+            : "",
       category:
         typeof sourceSnapshot.category === "string"
           ? sourceSnapshot.category

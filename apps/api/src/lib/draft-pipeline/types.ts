@@ -38,6 +38,7 @@ export type RecentDraftContext = {
   createdAt: string;
   profileId: string | null;
   title: string;
+  content: string;
   category: ProfileMaterialCategory | null;
   themeKey: ContentThemeKey | null;
   themeLabel: string | null;

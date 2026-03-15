@@ -6,7 +6,8 @@ import {
   listDemoPosts,
   markDemoJobRunSucceeded,
   markDemoPostFailed,
-  markDemoPostPublished
+  markDemoPostPublished,
+  updateDemoPost
 } from "../demo-store";
 import { logger } from "../logger";
 import { isDemoModeEnabled } from "../runtime";
@@ -38,6 +39,7 @@ type StoredPostRecord = {
     | "cancelled";
   publish_status: "pending" | "sent_to_threads" | "published" | "failed";
   scheduled_at: string | null;
+  published_at: string | null;
   ai_model: string;
   source_snapshot: {
     category?: string;
@@ -48,7 +50,7 @@ type StoredPostRecord = {
 };
 
 const storedPostSelect =
-  "id, generated_content, edited_content, status, publish_status, scheduled_at, ai_model, source_snapshot, generation_notes";
+  "id, generated_content, edited_content, status, publish_status, scheduled_at, published_at, ai_model, source_snapshot, generation_notes";
 const autoPostingCadenceDays = 2;
 
 function buildRunKey(jobType: JobType, dateInput?: string) {
@@ -275,6 +277,38 @@ async function fetchUpcomingScheduledPost(nowIso: string) {
   return posts[0] ?? null;
 }
 
+async function fetchLatestPublishedPost() {
+  const posts = isDemoModeEnabled()
+    ? listDemoPosts({ limit: 50 })
+    : await (async () => {
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase
+          .from("posts")
+          .select(storedPostSelect)
+          .eq("status", "published")
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .returns<StoredPostRecord[]>();
+
+        if (error) {
+          throw error;
+        }
+
+        return data ?? [];
+      })();
+
+  return (
+    posts
+      .filter(
+        (post) => post.status === "published" && Boolean(post.published_at)
+      )
+      .sort((left, right) =>
+        (right.published_at ?? "").localeCompare(left.published_at ?? "")
+      )[0] ?? null
+  );
+}
+
 async function fetchLatestCadenceAnchorPost() {
   const posts = isDemoModeEnabled()
     ? listDemoPosts({ limit: 50 })
@@ -307,6 +341,44 @@ async function fetchLatestCadenceAnchorPost() {
         (right.scheduled_at ?? "").localeCompare(left.scheduled_at ?? "")
       )[0] ?? null
   );
+}
+
+async function rescheduleScheduledPost(input: {
+  id: string;
+  scheduledAt: string;
+  reason: string;
+}) {
+  if (isDemoModeEnabled()) {
+    return updateDemoPost(input.id, {
+      scheduled_at: input.scheduledAt,
+      status: "scheduled"
+    });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("generation_notes")
+    .eq("id", input.id)
+    .maybeSingle<{ generation_notes?: Record<string, unknown> | null }>();
+
+  const { error } = await supabase
+    .from("posts")
+    .update({
+      status: "scheduled",
+      publish_status: "pending",
+      scheduled_at: input.scheduledAt,
+      generation_notes: {
+        ...(existing?.generation_notes ?? {}),
+        cadenceRescheduledAt: new Date().toISOString(),
+        cadenceRescheduleReason: input.reason
+      }
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    throw error;
+  }
 }
 
 async function fetchTomorrowPreviewPosts(baseDate?: string) {
@@ -647,16 +719,89 @@ async function executePublishScheduledPosts(baseDate?: string) {
   const cutoffIso = baseDate
     ? new Date(baseDate).toISOString()
     : new Date().toISOString();
+  const settings = await getDefaultAiSettings();
+  const timeZone = settings?.timezone ?? env.TIMEZONE;
+  const defaultPostTime = settings?.default_post_time ?? "09:00:00";
   const duePosts = await fetchDueScheduledPosts(cutoffIso);
+  const latestPublishedPost = await fetchLatestPublishedPost();
+  let cadenceAnchorIso =
+    (await fetchLatestCadenceAnchorPost())?.scheduled_at ??
+    latestPublishedPost?.published_at ??
+    null;
+  const currentDateKey = buildDateKey({
+    date: cutoffIso,
+    timeZone
+  });
+  let alreadyPublishedForCurrentDay =
+    latestPublishedPost?.published_at != null &&
+    buildDateKey({
+      date: latestPublishedPost.published_at,
+      timeZone
+    }) === currentDateKey;
   const results: Array<{
     postId: string;
-    status: "published" | "failed";
+    status: "published" | "failed" | "rescheduled";
     threadId?: string;
     permalink?: string | null;
     errorMessage?: string;
+    scheduledAt?: string | null;
   }> = [];
 
   for (const post of duePosts) {
+    const earliestAllowedIso = cadenceAnchorIso
+      ? buildScheduledAtIso({
+          baseDate: cadenceAnchorIso,
+          dayOffset: autoPostingCadenceDays,
+          time: defaultPostTime,
+          timeZone
+        })
+      : null;
+    const shouldReschedule =
+      alreadyPublishedForCurrentDay ||
+      (earliestAllowedIso !== null &&
+        Boolean(post.scheduled_at) &&
+        (post.scheduled_at ?? "") < earliestAllowedIso);
+
+    if (shouldReschedule) {
+      const nextScheduledAt =
+        earliestAllowedIso ??
+        buildScheduledAtIso({
+          baseDate: cutoffIso,
+          dayOffset: autoPostingCadenceDays,
+          time: defaultPostTime,
+          timeZone
+        });
+      const reason = alreadyPublishedForCurrentDay
+        ? "daily_publish_limit_reached"
+        : "cadence_gap_enforced";
+
+      await rescheduleScheduledPost({
+        id: post.id,
+        scheduledAt: nextScheduledAt,
+        reason
+      });
+      await recordAuditEvent({
+        action: "post.rescheduled_for_cadence",
+        entityType: "post",
+        entityId: post.id,
+        actorType: "system",
+        actorIdentifier: "scheduler",
+        metadata: {
+          previousScheduledAt: post.scheduled_at,
+          nextScheduledAt,
+          reason
+        }
+      });
+
+      cadenceAnchorIso = nextScheduledAt;
+      results.push({
+        postId: post.id,
+        status: "rescheduled",
+        scheduledAt: nextScheduledAt
+      });
+      continue;
+    }
+
     const segments = getPostThreadSegments(post);
     let rootPublishSnapshot:
       | {
@@ -769,6 +914,8 @@ async function executePublishScheduledPosts(baseDate?: string) {
         threadId: firstPublishResult.id,
         permalink: firstDetails.permalink ?? null
       });
+      cadenceAnchorIso = post.scheduled_at ?? cutoffIso;
+      alreadyPublishedForCurrentDay = true;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown publish error";
@@ -813,6 +960,8 @@ async function executePublishScheduledPosts(baseDate?: string) {
     cutoffIso,
     totalDuePosts: duePosts.length,
     publishedCount: results.filter((item) => item.status === "published")
+      .length,
+    rescheduledCount: results.filter((item) => item.status === "rescheduled")
       .length,
     failedCount: results.filter((item) => item.status === "failed").length,
     results

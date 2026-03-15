@@ -86,10 +86,7 @@ export function getContentThemeByKey(key: string | null | undefined) {
   return contentThemeMap.get(key as ContentThemeKey) ?? null;
 }
 
-export function getNextContentTheme(
-  recentPosts: RecentPostThemeContext[],
-  generatedPostCount: number
-) {
+export function getNextContentTheme(recentPosts: RecentPostThemeContext[]) {
   const latestWithTheme = recentPosts.find((post) =>
     Boolean(getContentThemeByKey(post.themeKey))
   );
@@ -106,5 +103,5 @@ export function getNextContentTheme(
     }
   }
 
-  return contentThemeSequence[generatedPostCount % contentThemeSequence.length];
+  return contentThemeSequence[0];
 }
