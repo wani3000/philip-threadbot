@@ -11,7 +11,7 @@ export default async function NotificationSettingsPage() {
       <AppShell
         pathname="/settings/notification"
         title="알림 설정"
-        description="텔레그램 미리보기 발송 대상, 발송 시간, 기본 게시 시간과 타임존을 관리합니다."
+        description="텔레그램 미리보기 발송 대상, 발송 시간, 2일 cadence 기준 기본 게시 시간과 타임존을 관리합니다."
       >
         <section className="card">
           <h2 className="card-title">텔레그램 알림</h2>
@@ -59,6 +59,10 @@ export default async function NotificationSettingsPage() {
                 알림 설정 저장
               </button>
             </div>
+            <p className="card-copy" style={{ marginTop: "0.75rem" }}>
+              기본 게시 시간은 자동 생성과 라이브러리 복제 시 다음 유효 cadence
+              슬롯을 계산할 때 사용됩니다.
+            </p>
           </form>
         </section>
       </AppShell>

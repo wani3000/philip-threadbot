@@ -7,7 +7,10 @@ import { ThreadPreview } from "../../components/thread-preview";
 import { fetchPosts, fetchThreadsInsightsSummary } from "../../lib/api";
 import { getProfileCategoryLabel } from "../../lib/profile-categories";
 import { splitStoredThreadContent } from "../../lib/thread-content";
-import { reusePostAsDraftAction, reusePostForTomorrowAction } from "../actions";
+import {
+  reusePostAsDraftAction,
+  reusePostForNextCadenceAction
+} from "../actions";
 
 type LibraryPageProps = {
   searchParams?: {
@@ -70,7 +73,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       <AppShell
         pathname="/library"
         title="글 라이브러리"
-        description="생성된 글을 전체 이력 관점에서 보고, 모델과 상태, 원재료 맥락을 함께 확인합니다."
+        description="생성된 글을 전체 이력 관점에서 보고, 2일 cadence 재사용 여부와 원재료 맥락을 함께 확인합니다."
       >
         {posts.length === 0 ? (
           <EmptyState
@@ -214,7 +217,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                           새 초안으로 재사용
                         </button>
                       </form>
-                      <form action={reusePostForTomorrowAction}>
+                      <form action={reusePostForNextCadenceAction}>
                         <input name="id" type="hidden" value={post.id} />
                         <button className="button-primary" type="submit">
                           다음 일정으로 복제

@@ -22,7 +22,7 @@ export function renderDraftPreviewMessage({
         ])
       : [segments[0] ?? ""];
   const lines = [
-    "[Philip Threadbot] 내일 게시 예정 초안",
+    "[Philip Threadbot] 다음 게시 예정 초안",
     scheduledAt ? `게시 예정: ${scheduledAt}` : null,
     aiModel ? `AI 모델: ${aiModel}` : null,
     materialCategory ? `원재료 카테고리: ${materialCategory}` : null,

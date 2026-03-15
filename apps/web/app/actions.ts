@@ -194,7 +194,7 @@ export async function reusePostAsDraftAction(formData: FormData) {
   revalidatePath("/calendar");
 }
 
-export async function reusePostForTomorrowAction(formData: FormData) {
+export async function reusePostForNextCadenceAction(formData: FormData) {
   const scheduledAt = await buildNextCadenceScheduledIso();
 
   await reusePost(String(formData.get("id")), {

@@ -26,25 +26,13 @@ import { hasSupabaseAuthConfig } from "../lib/supabase/config";
 import { splitStoredThreadContent } from "../lib/thread-content";
 import { formatDateTimeLocalInTimeZone } from "../lib/timezone";
 
-function getTomorrowRange() {
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
+const plannedWindowDays = 14;
 
-  const tomorrowEnd = new Date(tomorrow);
-  tomorrowEnd.setHours(23, 59, 59, 999);
-
-  return {
-    start: tomorrow.toISOString(),
-    end: tomorrowEnd.toISOString()
-  };
-}
-
-function getNextWeekRange() {
+function getUpcomingRange(days: number) {
   const now = new Date();
   const end = new Date(now);
-  end.setDate(now.getDate() + 7);
+  end.setDate(now.getDate() + days);
+
   return {
     start: now.toISOString(),
     end: end.toISOString()
@@ -53,43 +41,36 @@ function getNextWeekRange() {
 
 export default async function HomePage() {
   try {
-    const tomorrowRange = getTomorrowRange();
-    const nextWeekRange = getNextWeekRange();
+    const upcomingRange = getUpcomingRange(plannedWindowDays);
     const webAuthReady = hasSupabaseAuthConfig();
 
-    const [
-      materials,
-      tomorrowPosts,
-      weekPosts,
-      settings,
-      auditLogs,
-      readiness,
-      insights
-    ] = await Promise.all([
-      fetchProfileMaterials(),
-      fetchPosts({
-        dateFrom: tomorrowRange.start,
-        dateTo: tomorrowRange.end,
-        limit: 5
-      }),
-      fetchPosts({
-        dateFrom: nextWeekRange.start,
-        dateTo: nextWeekRange.end,
-        limit: 14
-      }),
-      fetchAiSettings(),
-      fetchAuditLogs(),
-      fetchOperationalReadiness(),
-      fetchThreadsInsightsSummary()
-    ]);
+    const [materials, upcomingPosts, settings, auditLogs, readiness, insights] =
+      await Promise.all([
+        fetchProfileMaterials(),
+        fetchPosts({
+          dateFrom: upcomingRange.start,
+          dateTo: upcomingRange.end,
+          limit: 40
+        }),
+        fetchAiSettings(),
+        fetchAuditLogs(),
+        fetchOperationalReadiness(),
+        fetchThreadsInsightsSummary()
+      ]);
 
-    const tomorrowPost = tomorrowPosts[0];
-    const tomorrowThreadSegments = tomorrowPost
+    const schedulableStatuses = new Set(["approved", "scheduled", "published"]);
+    const scheduledPosts = upcomingPosts.filter(
+      (post) => post.scheduled_at && schedulableStatuses.has(post.status)
+    );
+    const nextScheduledPost = scheduledPosts[0];
+    const nextScheduledThreadSegments = nextScheduledPost
       ? splitStoredThreadContent(
-          tomorrowPost.edited_content ?? tomorrowPost.generated_content,
-          tomorrowPost.generation_notes?.thread_segments ?? []
+          nextScheduledPost.edited_content ??
+            nextScheduledPost.generated_content,
+          nextScheduledPost.generation_notes?.thread_segments ?? []
         )
       : [];
+
     const operationalChecks = [
       ...readiness.checks,
       {
@@ -145,7 +126,7 @@ export default async function HomePage() {
       <AppShell
         pathname="/"
         title="운영 개요"
-        description="내일 게시 예정 초안, 이번 주 일정, 원재료 건강도를 한 화면에서 다룹니다."
+        description="다음 게시 예정 글, 2일 cadence 일정, 원재료 건강도와 최근 성과를 한 화면에서 다룹니다."
       >
         <div className="grid three">
           <section className="card metric">
@@ -154,23 +135,27 @@ export default async function HomePage() {
             <p className="card-copy">현재 AI가 선택 가능한 원재료 수</p>
           </section>
           <section className="card metric">
-            <span className="eyebrow">주간 예정 글</span>
-            <strong>{weekPosts.length}</strong>
-            <p className="card-copy">향후 7일 이내 게시 또는 예정 상태</p>
+            <span className="eyebrow">다음 2주 예정 글</span>
+            <strong>{scheduledPosts.length}</strong>
+            <p className="card-copy">
+              향후 14일 안에 잡혀 있는 예약 또는 게시 일정
+            </p>
           </section>
           <section className="card metric">
-            <span className="eyebrow">기본 모델</span>
-            <strong>{settings.default_model}</strong>
-            <p className="card-copy">{settings.default_provider} 기준 생성</p>
+            <span className="eyebrow">운영 cadence</span>
+            <strong>2일 1회</strong>
+            <p className="card-copy">
+              생성, 복제, 실제 게시까지 같은 간격 규칙 적용
+            </p>
           </section>
         </div>
 
         <section className="card" style={{ marginTop: "1rem" }}>
           <div className="item-head">
             <div>
-              <h2 className="card-title">운영 시작 준비 상태</h2>
+              <h2 className="card-title">운영 상태 진단</h2>
               <p className="card-copy">
-                실운영 전환에 필요한 환경과 외부 연동 상태를 한 번에 확인합니다.
+                실운영에 필요한 환경과 외부 연동 상태를 한 번에 확인합니다.
               </p>
             </div>
             <StatusBadge status={overallStatus} />
@@ -249,36 +234,37 @@ export default async function HomePage() {
           <section className="card">
             <div className="item-head">
               <div>
-                <h2 className="card-title">내일 게시 예정</h2>
+                <h2 className="card-title">다음 게시 예정</h2>
                 <p className="card-copy">
-                  편집, 취소, 재생성을 한 자리에서 처리합니다.
+                  가장 가까운 예약 글을 기준으로 편집, 취소, 재생성을 한
+                  자리에서 처리합니다.
                 </p>
               </div>
-              {tomorrowPost ? (
-                <StatusBadge status={tomorrowPost.status} />
+              {nextScheduledPost ? (
+                <StatusBadge status={nextScheduledPost.status} />
               ) : null}
             </div>
 
-            {tomorrowPost ? (
+            {nextScheduledPost ? (
               <div className="grid" style={{ marginTop: "1rem" }}>
                 <div className="item-meta">
-                  <span>{formatDateTime(tomorrowPost.scheduled_at)}</span>
-                  <span>{tomorrowPost.ai_provider}</span>
-                  <span>{tomorrowPost.ai_model}</span>
+                  <span>{formatDateTime(nextScheduledPost.scheduled_at)}</span>
+                  <span>{nextScheduledPost.ai_provider}</span>
+                  <span>{nextScheduledPost.ai_model}</span>
                   <span>
                     {getProfileCategoryLabel(
-                      tomorrowPost.source_snapshot?.category
+                      nextScheduledPost.source_snapshot?.category
                     )}
                   </span>
                 </div>
                 <form action={updatePostAction} className="form-grid">
-                  <input name="id" type="hidden" value={tomorrowPost.id} />
+                  <input name="id" type="hidden" value={nextScheduledPost.id} />
                   <div className="field">
                     <label htmlFor="editedContent">최종 편집본</label>
                     <textarea
                       defaultValue={
-                        tomorrowPost.edited_content ??
-                        tomorrowPost.generated_content
+                        nextScheduledPost.edited_content ??
+                        nextScheduledPost.generated_content
                       }
                       id="editedContent"
                       name="editedContent"
@@ -293,7 +279,7 @@ export default async function HomePage() {
                       <label htmlFor="scheduledAt">게시 시간</label>
                       <input
                         defaultValue={formatDateTimeLocalInTimeZone(
-                          tomorrowPost.scheduled_at,
+                          nextScheduledPost.scheduled_at,
                           settings.timezone
                         )}
                         id="scheduledAt"
@@ -304,7 +290,7 @@ export default async function HomePage() {
                     <div className="field">
                       <label htmlFor="status">상태</label>
                       <select
-                        defaultValue={tomorrowPost.status}
+                        defaultValue={nextScheduledPost.status}
                         id="status"
                         name="status"
                       >
@@ -335,12 +321,12 @@ export default async function HomePage() {
                     </button>
                   </div>
                 </form>
-                <ThreadPreview segments={tomorrowThreadSegments} />
+                <ThreadPreview segments={nextScheduledThreadSegments} />
               </div>
             ) : (
               <EmptyState
-                title="내일 예정 글이 없습니다"
-                copy="아래 생성 폼으로 바로 초안을 만들 수 있습니다."
+                title="다음 예정 글이 없습니다"
+                copy="아래 생성 폼으로 초안을 만들거나, 라이브러리에서 다음 cadence 슬롯으로 복제할 수 있습니다."
               />
             )}
           </section>
@@ -349,7 +335,8 @@ export default async function HomePage() {
             <h2 className="card-title">새 초안 생성</h2>
             <p className="card-copy">
               기본 설정을 쓰되, 카테고리나 모델을 임시로 바꿔 빠르게 생성할 수
-              있습니다.
+              있습니다. 운영 기본값은 `2일 1회 게시`, `7개 주제 순환`, `중복 시
+              수동 재시도`입니다.
             </p>
             <form
               action={generateDraftAction}
@@ -409,6 +396,10 @@ export default async function HomePage() {
                   name="scheduledAt"
                   type="datetime-local"
                 />
+                <p className="card-copy">
+                  비워두면 초안으로 저장되고, 직접 지정하면 해당 시각으로
+                  예약됩니다.
+                </p>
               </div>
               <div className="actions">
                 <button className="button-primary" type="submit">
@@ -421,15 +412,15 @@ export default async function HomePage() {
 
         <div className="grid two" style={{ marginTop: "1rem" }}>
           <section className="card">
-            <h2 className="card-title">이번 주 캘린더</h2>
-            {weekPosts.length === 0 ? (
+            <h2 className="card-title">다음 2주 일정</h2>
+            {scheduledPosts.length === 0 ? (
               <EmptyState
-                title="주간 일정 없음"
+                title="예정된 일정 없음"
                 copy="생성된 글이 쌓이면 이곳에 보입니다."
               />
             ) : (
               <div className="list">
-                {weekPosts.map((post) => (
+                {scheduledPosts.map((post) => (
                   <article className="item" key={post.id}>
                     <div className="item-head">
                       <div>
@@ -448,40 +439,76 @@ export default async function HomePage() {
           </section>
 
           <section className="card">
-            <h2 className="card-title">원재료 현황</h2>
+            <h2 className="card-title">현재 운영 규칙</h2>
             <div className="list">
-              {categoryBreakdown.map((summary) => (
-                <div className="item" key={summary.category}>
-                  <div className="item-head">
-                    <strong>{getProfileCategoryLabel(summary.category)}</strong>
-                    <span>원재료 {summary.materialCount}개</span>
-                  </div>
-                  <p className="card-copy">
-                    게시 {summary.postCount}건 · 조회수 {summary.totalViews} ·
-                    반응 {summary.totalEngagement}
-                  </p>
-                  <div className="bar-track" style={{ marginTop: "0.75rem" }}>
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${
-                          categoryBreakdown[0]?.totalViews
-                            ? Math.max(
-                                12,
-                                (summary.totalViews /
-                                  categoryBreakdown[0].totalViews) *
-                                  100
-                              )
-                            : 12
-                        }%`
-                      }}
-                    />
-                  </div>
+              <article className="item">
+                <div className="item-head">
+                  <strong>게시 cadence</strong>
+                  <span>2일 1회</span>
                 </div>
-              ))}
+                <p className="card-copy">
+                  자동 생성, 라이브러리 복제, 실제 게시 단계 모두 같은 간격으로
+                  강제됩니다.
+                </p>
+              </article>
+              <article className="item">
+                <div className="item-head">
+                  <strong>주제 운영</strong>
+                  <span>7개 순환</span>
+                </div>
+                <p className="card-copy">
+                  고정 주제를 순서대로 돌리고, 최근 원재료는 다시 우선 선택하지
+                  않습니다.
+                </p>
+              </article>
+              <article className="item">
+                <div className="item-head">
+                  <strong>비식별화·중복 방지</strong>
+                  <span>저비용 모드</span>
+                </div>
+                <p className="card-copy">
+                  특정 회사명은 일반화해 쓰고, 중복이 감지되면 자동 재생성 대신
+                  수동 재시도로 넘깁니다.
+                </p>
+              </article>
             </div>
           </section>
         </div>
+
+        <section className="card" style={{ marginTop: "1rem" }}>
+          <h2 className="card-title">원재료 현황</h2>
+          <div className="list">
+            {categoryBreakdown.map((summary) => (
+              <div className="item" key={summary.category}>
+                <div className="item-head">
+                  <strong>{getProfileCategoryLabel(summary.category)}</strong>
+                  <span>원재료 {summary.materialCount}개</span>
+                </div>
+                <p className="card-copy">
+                  게시 {summary.postCount}건 · 조회수 {summary.totalViews} ·
+                  반응 {summary.totalEngagement}
+                </p>
+                <div className="bar-track" style={{ marginTop: "0.75rem" }}>
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${
+                        categoryBreakdown[0]?.totalViews
+                          ? Math.max(
+                              12,
+                              (summary.totalViews /
+                                categoryBreakdown[0].totalViews) *
+                                100
+                            )
+                          : 12
+                      }%`
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="card" style={{ marginTop: "1rem" }}>
           <div className="item-head">
